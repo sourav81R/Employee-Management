@@ -1,47 +1,149 @@
-import React, { useEffect, useState } from 'react';
+// EmployeeForm.js
+import React, { useState, useEffect } from "react";
 
+export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
+  const [form, setForm] = useState({
+    employeeId: "",
+    name: "",
+    email: "",
+    position: "",
+    department: "",
+    salary: "",
+    salaryPaid: false,
+  });
 
-export default function EmployeeForm({ onCreate, editing, onUpdate, onCancel }) {
-const [form, setForm] = useState({ name:'', email:'', position:'', department:'', salary:'' });
+  useEffect(() => {
+    if (editing) {
+      // copy only known fields in case the editing object has extra properties
+      setForm({
+        employeeId: editing.employeeId ?? "",
+        name: editing.name ?? "",
+        email: editing.email ?? "",
+        position: editing.position ?? "",
+        department: editing.department ?? "",
+        salary: editing.salary ?? "",
+        salaryPaid: editing.salaryPaid ?? false,
+      });
+    } else {
+      setForm({
+        employeeId: "",
+        name: "",
+        email: "",
+        position: "",
+        department: "",
+        salary: "",
+        salaryPaid: false,
+      });
+    }
+  }, [editing]);
 
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
 
-useEffect(() => {
-if (editing) {
-setForm({ ...editing, salary: editing.salary || '' });
-}
-}, [editing]);
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (editing) {
+      // update using the DB _id from editing object
+      onUpdate(editing._id, form);
+    } else {
+      onAdd(form);
+    }
+    // reset
+    setEditing(null);
+    setForm({
+      employeeId: "",
+      name: "",
+      email: "",
+      position: "",
+      department: "",
+      salary: "",
+      salaryPaid: false,
+    });
+  }
 
+  return (
+    <form className="employee-form" onSubmit={handleSubmit}>
+      <input
+        type="text"
+        name="employeeId"
+        placeholder="Employee ID (custom)"
+        value={form.employeeId}
+        onChange={handleChange}
+      />
 
-function handleChange(e) {
-const { name, value } = e.target;
-setForm(prev => ({ ...prev, [name]: value }));
-}
+      <input
+        type="text"
+        name="name"
+        placeholder="Full Name"
+        value={form.name}
+        onChange={handleChange}
+        required
+      />
 
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        value={form.email}
+        onChange={handleChange}
+        required
+      />
 
-async function submit(e) {
-e.preventDefault();
-const payload = { ...form, salary: Number(form.salary || 0) };
-if (editing) {
-await onUpdate(editing._id, payload);
-} else {
-await onCreate(payload);
-setForm({ name:'', email:'', position:'', department:'', salary:'' });
-}
-}
+      <input
+        type="text"
+        name="position"
+        placeholder="Position"
+        value={form.position}
+        onChange={handleChange}
+      />
 
+      <input
+        type="text"
+        name="department"
+        placeholder="Department"
+        value={form.department}
+        onChange={handleChange}
+      />
 
-return (
-<form className="card form" onSubmit={submit}>
-<h3>{editing ? 'Edit Employee' : 'Add Employee'}</h3>
-<input required placeholder="Name" name="name" value={form.name} onChange={handleChange} />
-<input required placeholder="Email" name="email" value={form.email} onChange={handleChange} />
-<input placeholder="Position" name="position" value={form.position} onChange={handleChange} />
-<input placeholder="Department" name="department" value={form.department} onChange={handleChange} />
-<input placeholder="Salary" name="salary" value={form.salary} onChange={handleChange} />
-<div className="actions">
-<button type="submit">{editing ? 'Update' : 'Add'}</button>
-{editing && <button type="button" onClick={onCancel}>Cancel</button>}
-</div>
-</form>
-);
+      <input
+        type="number"
+        name="salary"
+        placeholder="Salary"
+        value={form.salary}
+        onChange={handleChange}
+      />
+
+      <label style={{ display: "block", margin: "8px 0" }}>
+        <input
+          type="checkbox"
+          name="salaryPaid"
+          checked={!!form.salaryPaid}
+          onChange={handleChange}
+        />{" "}
+        Salary Paid
+      </label>
+
+      <div className="form-actions">
+        <button type="submit" className="submit-btn">
+          {editing ? "Update Employee" : "Add Employee"}
+        </button>
+
+        {editing && (
+          <button
+            type="button"
+            className="cancel-btn"
+            onClick={() => setEditing(null)}
+            style={{ marginLeft: 8 }}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+    </form>
+  );
 }

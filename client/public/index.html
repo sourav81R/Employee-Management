@@ -1,11 +1,33 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Employee Management</title>
-</head>
-<body>
-<div id="root"></div>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Employee Management System</title>
+
+    <!-- ✅ Favicon (Fixes 500 Error) -->
+    <link rel="icon" type="image/x-icon" href="%PUBLIC_URL%/favicon.ico" />
+
+    <!-- ✅ Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-pO12V0c8aAwcxwzgyj/7oF8g/Z3N6OZb9hK1W1XQ8rLuwxDccH77Bh6Tixs3V2MbSL6ZzvH/hBfVek2jA5ZbZw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- ✅ Main stylesheet (React loads App.css dynamically) -->
+    <link rel="stylesheet" href="%PUBLIC_URL%/style.css" />
+  </head>
+
+  <body>
+    <!-- ✅ React App mounts here -->
+    <div id="root"></div>
+
+    <!-- ⚠️ These below elements (Navbar, Hero, Footer) 
+         should be inside React components, not static HTML -->
+    <!-- React will render your Navbar, Dashboard, Admin Panel, etc. -->
+  </body>
 </html>

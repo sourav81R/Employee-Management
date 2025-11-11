@@ -1,63 +1,63 @@
-const express = require('express');
+// server/routes/employeeRoutes.js
+import express from "express";
+import Employee from "../models/Employee.js";   // make sure you have Employee model created
+import { protect, adminOnly } from "../middleware/authMiddleware.js";
+
 const router = express.Router();
-const Employee = require('../models/Employee');
 
-
-// Create employee
-router.post('/', async (req, res) => {
-try {
-const emp = new Employee(req.body);
-const saved = await emp.save();
-res.status(201).json(saved);
-} catch (err) {
-res.status(400).json({ error: err.message });
-}
+// ===== CREATE EMPLOYEE (Admin only) =====
+router.post("/", protect, adminOnly, async (req, res) => {
+  try {
+    const { name, email, position, salary } = req.body;
+    const employee = new Employee({ name, email, position, salary });
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-
-// Read all
-router.get('/', async (req, res) => {
-try {
-const list = await Employee.find().sort({ createdAt: -1 });
-res.json(list);
-} catch (err) {
-res.status(500).json({ error: err.message });
-}
+// ===== GET ALL EMPLOYEES (Protected) =====
+router.get("/", protect, async (req, res) => {
+  try {
+    const employees = await Employee.find();
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-
-// Read one
-router.get('/:id', async (req, res) => {
-try {
-const emp = await Employee.findById(req.params.id);
-if (!emp) return res.status(404).json({ error: 'Not found' });
-res.json(emp);
-} catch (err) {
-res.status(500).json({ error: err.message });
-}
+// ===== GET SINGLE EMPLOYEE BY ID =====
+router.get("/:id", protect, async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    res.json(employee);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-
-// Update
-router.put('/:id', async (req, res) => {
-try {
-const updated = await Employee.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-res.json(updated);
-} catch (err) {
-res.status(400).json({ error: err.message });
-}
+// ===== UPDATE EMPLOYEE (Admin only) =====
+router.put("/:id", protect, adminOnly, async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    res.json(employee);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-
-// Delete
-router.delete('/:id', async (req, res) => {
-try {
-await Employee.findByIdAndDelete(req.params.id);
-res.json({ message: 'Deleted' });
-} catch (err) {
-res.status(500).json({ error: err.message });
-}
+// ===== DELETE EMPLOYEE (Admin only) =====
+router.delete("/:id", protect, adminOnly, async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    res.json({ message: "Employee deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
-
-module.exports = router;
+export default router;
