@@ -1,250 +1,190 @@
-// ===== Imports =====
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+// server/server.js (ES modules) — diagnostic/hardened
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 
-// ===== Middleware =====
-app.use(cors());
+/* -----------------------
+   Basic middleware
+   ----------------------- */
+app.use(helmet());
 app.use(express.json());
-
-// ===== MongoDB Connection =====
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+    credentials: true,
   })
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err.message));
+);
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 
-// ===== User Schema =====
-const userSchema = new mongoose.Schema({
-  name: { type: String },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ["user", "admin"], default: "user" },
-});
+/* -----------------------
+   Quick env diagnostics
+   ----------------------- */
+console.log("=== ENV DIAGNOSTICS ===");
+console.log("NODE_ENV:", process.env.NODE_ENV || "not set");
+console.log("PORT:", process.env.PORT || "8000");
+console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN || "http://localhost:3000");
+console.log("MONGO_URI set?:", !!process.env.MONGO_URI);
+console.log("JWT_SECRET set?:", !!process.env.JWT_SECRET);
+console.log("========================");
+
+/* -----------------------
+   MongoDB connection
+   ----------------------- */
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI not found in .env — please add it and restart");
+  process.exit(1);
+}
+
+mongoose
+  .connect(MONGO_URI, { autoIndex: true })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:");
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  });
+
+/* -----------------------
+   Models
+   ----------------------- */
+const userSchema = new mongoose.Schema(
+  {
+    name: String,
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+  },
+  { timestamps: true }
+);
 const User = mongoose.model("User", userSchema);
 
-// ===== Employee Schema =====
-const employeeSchema = new mongoose.Schema({
-  employeeId: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  position: { type: String },
-  department: { type: String },
-  salary: { type: Number },
-  lastPaid: { type: Date }, // ✅ Track salary payment date
-});
+const employeeSchema = new mongoose.Schema(
+  {
+    employeeId: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    position: String,
+    department: String,
+    salary: Number,
+    lastPaid: Date,
+  },
+  { timestamps: true }
+);
 const Employee = mongoose.model("Employee", employeeSchema);
 
-// ===== Root Route =====
-app.get("/", (req, res) => {
-  res.send("🚀 Auth & Employee Management API is running...");
-});
+/* -----------------------
+   Routes (basic)
+   ----------------------- */
+app.get("/", (req, res) => res.send("🚀 Employee Management API is running"));
 
-// ====================== AUTH ROUTES ======================
-
-// ➤ Register
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+    if (!email || !password) return res.status(400).json({ message: "Email & password required" });
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ message: "User already exists" });
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ message: "User already exists" });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
-
-    res.status(201).json({
-      message: "✅ Registered successfully",
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
-  } catch (error) {
-    console.error("❌ Registration error:", error.message);
-    res.status(500).json({ message: "❌ Server error during registration" });
+    const hashed = await bcrypt.hash(password, 10);
+    const newUser = await User.create({ name, email, password: hashed, role });
+    return res.status(201).json({ message: "Registered", user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role } });
+  } catch (err) {
+    console.error("register err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Server error", error: err.message || err });
   }
 });
 
-// ➤ Login
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    if (!email || !password) return res.status(400).json({ message: "Email & password required" });
 
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Invalid credentials" });
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET || "dev_secret", { expiresIn: process.env.JWT_EXPIRE || "7d" });
 
-    res.json({
-      message: "✅ Login successful",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("❌ Login error:", error.message);
-    res.status(500).json({ message: "❌ Server error during login" });
+    return res.json({ message: "Logged in", token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error("login err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Login error", error: err.message || err });
   }
 });
 
-// ====================== EMPLOYEE ROUTES ======================
-
-// ➤ Get all employees
 app.get("/api/employees", async (req, res) => {
   try {
-    const employees = await Employee.find().sort({ createdAt: -1 });
-    res.json(employees);
-  } catch (error) {
-    console.error("❌ Failed to fetch employees:", error.message);
-    res.status(500).json({
-      message: "❌ Failed to fetch employees",
-      error: error.message,
-    });
+    const list = await Employee.find().sort({ createdAt: -1 });
+    return res.json(list);
+  } catch (err) {
+    console.error("get employees err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Failed to fetch employees" });
   }
 });
 
-// ➤ Create employee
 app.post("/api/employees", async (req, res) => {
   try {
-    const { employeeId, name, email, position, department, salary } = req.body;
+    const { employeeId, name, email } = req.body;
+    if (!employeeId || !name || !email) return res.status(400).json({ message: "employeeId, name and email required" });
 
-    if (!employeeId || !name || !email) {
-      return res
-        .status(400)
-        .json({ message: "Employee ID, name, and email are required" });
-    }
+    const exists = await Employee.findOne({ employeeId });
+    if (exists) return res.status(400).json({ message: "Employee ID already exists" });
 
-    const existingEmployee = await Employee.findOne({ employeeId });
-    if (existingEmployee)
-      return res.status(400).json({ message: "Employee ID already exists" });
-
-    const newEmployee = await Employee.create({
-      employeeId,
-      name,
-      email,
-      position,
-      department,
-      salary,
-    });
-
-    res.status(201).json({
-      message: "✅ Employee added successfully",
-      employee: newEmployee,
-    });
-  } catch (error) {
-    console.error("❌ Employee creation error:", error.message);
-    res.status(500).json({
-      message: "❌ Failed to add employee",
-      error: error.message,
-    });
+    const emp = await Employee.create(req.body);
+    return res.status(201).json({ message: "Employee created", employee: emp });
+  } catch (err) {
+    console.error("create emp err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Failed to create employee" });
   }
 });
 
-// ➤ Update employee
-app.put("/api/employees/:id", async (req, res) => {
-  try {
-    const updated = await Employee.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!updated)
-      return res.status(404).json({ message: "Employee not found" });
-    res.json({
-      message: "✅ Employee updated successfully",
-      employee: updated,
-    });
-  } catch (error) {
-    console.error("❌ Update employee error:", error.message);
-    res.status(500).json({
-      message: "❌ Failed to update employee",
-      error: error.message,
-    });
-  }
-});
-
-// ➤ Delete employee
-app.delete("/api/employees/:id", async (req, res) => {
-  try {
-    const deleted = await Employee.findByIdAndDelete(req.params.id);
-    if (!deleted)
-      return res.status(404).json({ message: "Employee not found" });
-    res.json({ message: "✅ Employee deleted successfully" });
-  } catch (error) {
-    console.error("❌ Delete employee error:", error.message);
-    res.status(500).json({
-      message: "❌ Failed to delete employee",
-      error: error.message,
-    });
-  }
-});
-
-// ➤ Pay salary
 app.post("/api/employees/pay/:id", async (req, res) => {
   try {
     const emp = await Employee.findById(req.params.id);
-    if (!emp)
-      return res.status(404).json({ message: "❌ Employee not found" });
+    if (!emp) return res.status(404).json({ message: "Employee not found" });
 
-    // Simulate payment (update lastPaid)
     emp.lastPaid = new Date();
     await emp.save();
-
-    const formattedDate = emp.lastPaid.toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-
-    console.log(`💰 Salary of ₹${emp.salary} paid to ${emp.name} (${formattedDate})`);
-
-    res.json({
-      message: `💰 Salary of ₹${emp.salary || "N/A"} paid to ${emp.name} on ${formattedDate}`,
-      employee: emp,
-    });
-  } catch (error) {
-    console.error("💥 Salary payment error:", error.message);
-    res.status(500).json({
-      message: "❌ Failed to pay salary",
-      error: error.message,
-    });
+    return res.json({ message: `Salary paid to ${emp.name}`, employee: emp });
+  } catch (err) {
+    console.error("pay err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Payment failed" });
   }
 });
 
-// ===== START SERVER =====
-const PORT = process.env.PORT || 5000;
+/* -----------------------
+   Unhandled error handlers
+   ----------------------- */
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+/* -----------------------
+   Start server
+   ----------------------- */
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

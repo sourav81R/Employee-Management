@@ -3,7 +3,10 @@ import React, { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import "../App.css"; // For consistent form styling
+import "../App.css";
+
+// Optional: set a base URL centrally (you can also do this in a separate api client file)
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,47 +17,45 @@ export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useContext(AuthContext);
 
-  // =============================
-  // ✅ Handle Login Submission
-  // =============================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post("/api/auth/login", { email, password });
 
       const { token, user } = res.data;
 
       if (!user || !token) {
-        throw new Error("Invalid server response — missing token or user info");
+        throw new Error("Invalid server response — missing token or user");
       }
 
-      // ✅ Save auth info to localStorage
+      // Save token + user
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // ✅ Update global context
+      // Set default Authorization header for future axios requests
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Update global auth context
       setUser(user);
 
-      // ✅ Redirect user based on their role
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/"); // ensure this matches your Dashboard route in App.js
-      }
+      // Clear sensitive data from state
+      setPassword("");
+
+      // Redirect depending on role
+      if (user.role === "admin") navigate("/admin");
+      else navigate("/");
+
     } catch (err) {
-      console.error("❌ Login error:", err);
+      console.error("Login error:", err);
 
       const message =
-        err.response?.data?.message ||
+        err.response?.data?.message ??
         (err.code === "ERR_NETWORK"
-          ? "Server unreachable. Check if backend is running."
-          : "Invalid email or password.");
+          ? "Server unreachable — make sure the backend is running"
+          : "Invalid email or password");
 
       setError(message);
     } finally {
@@ -62,9 +63,6 @@ export default function Login() {
     }
   };
 
-  // =============================
-  // ✅ Render UI
-  // =============================
   return (
     <div className="form-container">
       <h2>Login</h2>
@@ -92,11 +90,7 @@ export default function Login() {
           required
         />
 
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={loading}
-        >
+        <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>

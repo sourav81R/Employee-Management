@@ -8,16 +8,17 @@ import {
   Navigate,
 } from "react-router-dom";
 
-import Dashboard from "./pages/Dashboard.js"; // User dashboard
-import AdminPanel from "./pages/Adminpanel"; // ✅ Ensure file name matches case
-import Login from "./pages/Login";
-import Register from "./pages/Register.js";
-import { AuthProvider, AuthContext } from "./context/AuthContext.js";
+import Dashboard from "./pages/Dashboard"; // ensure file is src/pages/Dashboard.js
+import AdminPanel from "./pages/Adminpanel"; // ensure file is src/pages/AdminPanel.js (case-sensitive)
+import Login from "./pages/Login"; // ensure file is src/pages/Login.js
+import Register from "./pages/Register"; // ensure file is src/pages/Register.js
+
+import { AuthProvider, AuthContext } from "./context/AuthContext";
 
 import "./App.css";
 
 // ================================
-// ✅ Navbar Component
+// Navbar Component
 // ================================
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
@@ -25,7 +26,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <i className="fa-solid fa-users" style={{ marginRight: "8px" }}></i>
+        <i className="fa-solid fa-users" style={{ marginRight: 8 }}></i>
         Employee Management
       </div>
 
@@ -34,14 +35,14 @@ function Navbar() {
           <Link to="/">Dashboard</Link>
         </li>
 
-        {/* 👑 Admin link (visible only to admins) */}
+        {/* Admin link (visible only to admins) */}
         {user && user.role === "admin" && (
           <li>
             <Link to="/admin">Admin Panel</Link>
           </li>
         )}
 
-        {/* 🔐 Login & Register links for non-authenticated users */}
+        {/* Login & Register links for non-authenticated users */}
         {!user && (
           <>
             <li>
@@ -53,7 +54,7 @@ function Navbar() {
           </>
         )}
 
-        {/* 🚪 Logout for authenticated users */}
+        {/* Logout for authenticated users */}
         {user && (
           <li>
             <button
@@ -77,7 +78,7 @@ function Navbar() {
 }
 
 // ================================
-// ✅ Protected Admin Route
+// Protected Admin Route
 // ================================
 function RequireAdmin({ children }) {
   const { user } = useContext(AuthContext);
@@ -85,7 +86,7 @@ function RequireAdmin({ children }) {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== "admin") {
     return (
-      <div style={{ textAlign: "center", marginTop: "80px" }}>
+      <div style={{ textAlign: "center", marginTop: 80 }}>
         <h2>🚫 Access Denied</h2>
         <p>You do not have permission to access this page.</p>
       </div>
@@ -96,7 +97,7 @@ function RequireAdmin({ children }) {
 }
 
 // ================================
-// ✅ Protected Route (Authenticated Users)
+// Protected Route (Authenticated Users)
 // ================================
 function RequireAuth({ children }) {
   const { user } = useContext(AuthContext);
@@ -106,7 +107,7 @@ function RequireAuth({ children }) {
 }
 
 // ================================
-// ✅ Main App Component
+// Main App Component
 // ================================
 export default function App() {
   return (
@@ -114,7 +115,7 @@ export default function App() {
       <Router>
         <Navbar />
         <Routes>
-          {/* 👤 Dashboard (All logged-in users) */}
+          {/* Dashboard (All logged-in users) */}
           <Route
             path="/"
             element={
@@ -124,11 +125,11 @@ export default function App() {
             }
           />
 
-          {/* 🔑 Public Routes */}
+          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* 👑 Admin Panel */}
+          {/* Admin Panel */}
           <Route
             path="/admin"
             element={
@@ -138,14 +139,14 @@ export default function App() {
             }
           />
 
-          {/* 🚫 404 Fallback */}
+          {/* 404 Fallback */}
           <Route
             path="*"
             element={
               <div
                 style={{
                   textAlign: "center",
-                  marginTop: "100px",
+                  marginTop: 100,
                   color: "#555",
                 }}
               >
