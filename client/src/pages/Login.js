@@ -6,7 +6,7 @@ import { AuthContext } from "../context/AuthContext";
 import "../App.css";
 
 // Optional: set a base URL centrally (you can also do this in a separate api client file)
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "https://employee-management-4p4a.vercel.app";
 
 export default function Login() {
   const [email, setEmail] = useState("");

@@ -19,7 +19,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+    origin: process.env.FRONTEND_ORIGIN || "https://employee-management-ivory-mu.vercel.app",
     credentials: true,
   })
 );
@@ -38,7 +38,7 @@ app.use(
 console.log("=== ENV DIAGNOSTICS ===");
 console.log("NODE_ENV:", process.env.NODE_ENV || "not set");
 console.log("PORT:", process.env.PORT || "8000");
-console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN || "http://localhost:3000");
+console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN || "https://employee-management-ivory-mu.vercel.app");
 console.log("MONGO_URI set?:", !!process.env.MONGO_URI);
 console.log("JWT_SECRET set?:", !!process.env.JWT_SECRET);
 console.log("========================");

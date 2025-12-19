@@ -15,7 +15,7 @@ export default function Register() {
     setError(null);
 
     try {
-      await axios.post("http://localhost:8000/api/auth/register", {
+      await axios.post("https://employee-management-4p4a.vercel.app/api/auth/register", {
         name,
         email,
         password,

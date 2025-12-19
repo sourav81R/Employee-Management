@@ -5,13 +5,13 @@ function ManageEmployees() {
   const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/employees")
+    axios.get("https://employee-management-4p4a.vercel.app/employees")
       .then(res => setEmployees(res.data))
       .catch(err => console.log(err));
   }, []);
 
-  const deleteEmployee = (id) => {
-    axios.delete(`http://localhost:5000/employees/${id}`)
+    const deleteEmployee = (id) => {
+      axios.delete(`https://employee-management-4p4a.vercel.app/employees/${id}`)
       .then(() => setEmployees(employees.filter(emp => emp._id !== id)))
       .catch(err => console.log(err));
   };
