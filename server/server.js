@@ -23,7 +23,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", "https://employee-management-ivory-mu.vercel.app"],
+    origin: ["http://localhost:3000", "http://localhost:5173", process.env.FRONTEND_ORIGIN || "https://employee-management-ivory-mu.vercel.app"],
     credentials: true,
   })
 );
@@ -360,7 +360,7 @@ app.post("/api/attendance/check-in", verifyToken, requireRole("admin", "hr", "ma
   try {
     console.log(`[API] Attendance check-in request for user: ${req.user.id}`);
     // Use the date provided by the frontend, or fallback to server local date
-    const today = req.body.date || new Date().toLocaleDateString('en-CA'); 
+    const today = req.body.date || new Date().toISOString().split('T')[0]; 
     const existing = await Attendance.findOne({ userId: req.user.id, date: today });
     if (existing) return res.status(400).json({ message: "Already checked in today" });
 
@@ -377,7 +377,7 @@ app.post("/api/attendance/check-out", verifyToken, requireRole("admin", "hr", "m
   try {
     console.log(`[API] Attendance check-out request for user: ${req.user.id}`);
     // Use the date provided by the frontend, or fallback to server local date
-    const today = req.body.date || new Date().toLocaleDateString('en-CA'); 
+    const today = req.body.date || new Date().toISOString().split('T')[0]; 
     const record = await Attendance.findOne({ userId: req.user.id, date: today });
 
     if (!record) {
@@ -401,7 +401,7 @@ app.post("/api/attendance/check-out", verifyToken, requireRole("admin", "hr", "m
 app.get("/api/attendance/today", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
   try {
     // Use the date provided in query params
-    const today = req.query.date || new Date().toLocaleDateString('en-CA');
+    const today = req.query.date || new Date().toISOString().split('T')[0];
     const record = await Attendance.findOne({ userId: req.user.id, date: today });
     return res.json(record);
   } catch (err) {
