@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
 
 function ManageEmployees() {
   const [employees, setEmployees] = useState([]);
+  const { user } = useContext(AuthContext);
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+  const getAuthHeader = () => ({
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  });
+
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/api/employees`)
+    axios.get(`${API_BASE_URL}/api/employees`, getAuthHeader())
       .then(res => setEmployees(res.data))
       .catch(err => console.log(err));
-  }, [API_BASE_URL]);
+  }, [API_BASE_URL, user]);
 
   const deleteEmployee = (id) => {
-    axios.delete(`${API_BASE_URL}/api/employees/${id}`)
+    if (!window.confirm("Are you sure you want to delete this employee?")) return;
+
+    axios.delete(`${API_BASE_URL}/api/employees/${id}`, getAuthHeader())
       .then(() => setEmployees(employees.filter(emp => emp._id !== id)))
       .catch(err => console.log(err));
   };
