@@ -184,7 +184,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-app.get("/api/employees", async (req, res) => {
+app.get("/api/employees", verifyToken, async (req, res) => {
   try {
     const list = await Employee.find().sort({ createdAt: -1 });
     return res.json(list);
@@ -194,7 +194,7 @@ app.get("/api/employees", async (req, res) => {
   }
 });
 
-app.post("/api/employees", async (req, res) => {
+app.post("/api/employees", verifyToken, requireRole("admin", "hr"), async (req, res) => {
   try {
     const { employeeId, name, email } = req.body;
     if (!employeeId || !name || !email) return res.status(400).json({ message: "employeeId, name and email required" });
@@ -224,7 +224,7 @@ app.post("/api/employees/pay/:id", verifyToken, requireRole("manager", "admin"),
   }
 });
 
-app.put("/api/employees/:id", async (req, res) => {
+app.put("/api/employees/:id", verifyToken, requireRole("admin", "hr"), async (req, res) => {
   try {
     const emp = await Employee.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!emp) return res.status(404).json({ message: "Employee not found" });
@@ -236,7 +236,7 @@ app.put("/api/employees/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/employees/:id", async (req, res) => {
+app.delete("/api/employees/:id", verifyToken, requireRole("admin", "hr"), async (req, res) => {
   try {
     const emp = await Employee.findByIdAndDelete(req.params.id);
     if (!emp) return res.status(404).json({ message: "Employee not found" });
