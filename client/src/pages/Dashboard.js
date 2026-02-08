@@ -3,6 +3,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { fetchEmployees } from "../api";
 import { AuthContext } from "../context/AuthContext";
 import "../App.css";
+import "../styles/dashboard.css";
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
@@ -32,64 +33,107 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="container">
-      {/* ✅ Welcome Message */}
-      <h2 className="title">
-        Welcome, <span>{user?.name || "User"}</span> 👋
-      </h2>
-      <p style={{ textAlign: "center", color: "#555", marginTop: "-10px" }}>
-        Here’s the list of employees. (Salary details are hidden for users.)
-      </p>
-
-      {/* 🔍 Search Box */}
-      <div className="search-box">
-        <input
-          type="text"
-          placeholder="Search employee by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button className="btn btn-primary">Search</button>
+    <div className="dashboard-container">
+      {/* Header Section */}
+      <div className="dashboard-hero">
+        <div className="hero-content">
+          <h1 className="hero-title">
+            <span className="welcome-icon">👋</span>
+            Welcome back, <span className="user-name">{user?.name || "User"}</span>
+          </h1>
+          <p className="hero-subtitle">Here's the complete list of employees in your organization</p>
+        </div>
+        <div className="hero-stats">
+          <div className="stat-card">
+            <span className="stat-icon">👥</span>
+            <div className="stat-info">
+              <p className="stat-label">Total Employees</p>
+              <p className="stat-value">{employees.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 📋 Employee Table */}
-      {loading ? (
-        <p style={{ textAlign: "center" }}>Loading employees...</p>
-      ) : filteredEmployees.length === 0 ? (
-        <p className="no-data">No employees found</p>
-      ) : (
-        <table className="employee-table">
-          <thead>
-            <tr>
-              <th>Employee ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Position</th>
-              <th>Department</th>
-              <th>Last Paid</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.map((emp) => (
-              <tr key={emp._id}>
-                <td>{emp.employeeId}</td>
-                <td>{emp.name}</td>
-                <td>{emp.email}</td>
-                <td>{emp.position || "—"}</td>
-                <td>{emp.department || "—"}</td>
-                <td>
-                  {emp.lastPaid
-                    ? new Date(emp.lastPaid).toLocaleDateString()
-                    : "Unpaid"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Main Content */}
+      <div className="dashboard-content">
+        {/* Search Section */}
+        <div className="search-section">
+          <div className="search-header">
+            <h2 className="section-title">🔍 Find Employees</h2>
+          </div>
+          <div className="search-wrapper">
+            <input
+              type="text"
+              placeholder="Search employee by name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="search-input"
+            />
+            <button className="btn btn-primary btn-search">Search</button>
+          </div>
+        </div>
+
+        {/* Employee List Section */}
+        <div className="employees-section">
+          <div className="section-header">
+            <h2 className="section-title">📋 Employee Directory</h2>
+            <div className="result-badge">
+              {filteredEmployees.length} results
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="loading-container">
+              <div className="loader"></div>
+              <p>Loading employees...</p>
+            </div>
+          ) : filteredEmployees.length === 0 ? (
+            <div className="no-data-container">
+              <p className="no-data-icon">🔎</p>
+              <p className="no-data-text">No employees found</p>
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="employee-table">
+                <thead>
+                  <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Position</th>
+                    <th>Department</th>
+                    <th>Last Paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEmployees.map((emp) => (
+                    <tr key={emp._id} className="table-row">
+                      <td className="id-cell">{emp.employeeId}</td>
+                      <td className="name-cell">
+                        <span className="employee-avatar">{emp.name.charAt(0)}</span>
+                        {emp.name}
+                      </td>
+                      <td className="email-cell">{emp.email}</td>
+                      <td className="position-cell">{emp.position || "—"}</td>
+                      <td className="department-cell">{emp.department || "—"}</td>
+                      <td className="date-cell">
+                        <span className={`date-badge ${emp.lastPaid ? 'paid' : 'unpaid'}`}>
+                          {emp.lastPaid
+                            ? new Date(emp.lastPaid).toLocaleDateString()
+                            : "Unpaid"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Footer */}
-      <footer>
+      <footer className="dashboard-footer">
         <p>Employee Management System © 2025</p>
       </footer>
     </div>

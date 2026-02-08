@@ -1,0 +1,86 @@
+.attendance-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 30px;
+}
+
+.attendance-card, .leave-card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.attendance-card h2, .leave-card h2 {
+    margin-top: 0;
+    color: #2d3748;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 10px;
+}
+
+.btn-checkin {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.2s;
+}
+
+.btn-checkin:hover {
+    transform: translateY(-2px);
+}
+
+.status-present {
+    background: #f0fff4;
+    border: 1px solid #c6f6d5;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: #2f855a;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.btn-leave {
+    background: #e63946;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: 700;
+    width: 100%;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .attendance-container {
+        grid-template-columns: 1fr;
+    }
+}

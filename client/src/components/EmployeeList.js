@@ -15,9 +15,9 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
           <th>Position</th>
           <th>Department</th>
           {/* 👇 Hide salary column for normal users */}
-          {role === "admin" && <th>Salary</th>}
+          {role?.toLowerCase() === "admin" && <th>Salary</th>}
           <th>Last Paid</th>
-          {role === "admin" && <th>Actions</th>}
+          {role?.toLowerCase() === "admin" && <th>Actions</th>}
         </tr>
       </thead>
 
@@ -31,7 +31,7 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
             <td>{emp.department}</td>
 
             {/* 👇 Show salary only for admin */}
-            {role === "admin" && (
+            {role?.toLowerCase() === "admin" && (
               <td>
                 ₹{emp.salary ? emp.salary.toLocaleString("en-IN") : "—"}
               </td>
@@ -47,7 +47,7 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
             </td>
 
             {/* 👇 Admin-only controls */}
-            {role === "admin" && (
+            {role?.toLowerCase() === "admin" && (
               <td>
                 <button onClick={() => onEdit(emp)} className="btn btn-edit">
                   Edit

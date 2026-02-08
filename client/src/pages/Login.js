@@ -1,18 +1,20 @@
 // src/pages/Login.js
 import React, { useState, useContext } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import "../App.css";
+import "./Login.css";
 
 // Optional: set a base URL centrally (you can also do this in a separate api client file)
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "https://employee-management-4p4a.vercel.app";
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [circleImage, setCircleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=300&fit=crop");
+  const [decorativeImage, setDecorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
 
   const navigate = useNavigate();
   const { setUser } = useContext(AuthContext);
@@ -45,7 +47,7 @@ export default function Login() {
       setPassword("");
 
       // Redirect depending on role
-      if (user.role === "admin") navigate("/admin");
+      if (user.role?.toLowerCase() === "admin") navigate("/admin");
       else navigate("/");
 
     } catch (err) {
@@ -64,36 +66,121 @@ export default function Login() {
   };
 
   return (
-    <div className="form-container">
-      <h2>Login</h2>
+    <div className="login-container">
+      <div className="login-wrapper">
+        {/* Left Side - Branding */}
+        <div className="login-branding">
+          <div className="branding-content">
+            <div className="logo-circle">
+              {circleImage ? (
+                <img 
+                  src={circleImage} 
+                  alt="Employee Management" 
+                  className="circle-image"
+                />
+              ) : (
+                <i className="fa-solid fa-building"></i>
+              )}
+            </div>
+            <h1>Employee Management</h1>
+            <p>Manage your workforce with ease</p>
+            <div className="features">
+              <div className="feature-item">
+                <i className="fa-solid fa-check"></i>
+                <span>Secure Authentication</span>
+              </div>
+              <div className="feature-item">
+                <i className="fa-solid fa-check"></i>
+                <span>Real-time Dashboard</span>
+              </div>
+              <div className="feature-item">
+                <i className="fa-solid fa-check"></i>
+                <span>Salary Management</span>
+              </div>
+            </div>
+            {decorativeImage && (
+              <div className="decorative-image-container">
+                <img 
+                  src={decorativeImage} 
+                  alt="Employee Management" 
+                  className="decorative-image"
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
-      {error && <p className="error-text">{error}</p>}
+        {/* Right Side - Login Form */}
+        <div className="login-form-wrapper">
+          <div className="login-card">
+            <div className="form-header">
+              <h2>Welcome Back</h2>
+              <p>Sign in to your account</p>
+            </div>
 
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="email">Email:</label>
-        <input
-          id="email"
-          type="email"
-          placeholder="Enter email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+            {error && (
+              <div className="error-alert">
+                <i className="fa-solid fa-exclamation-circle"></i>
+                <span>{error}</span>
+              </div>
+            )}
 
-        <label htmlFor="password">Password:</label>
-        <input
-          id="password"
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <div className="input-wrapper">
+                  <i className="fa-solid fa-envelope"></i>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div className="input-wrapper">
+                  <i className="fa-solid fa-lock"></i>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="login-btn" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-arrow-right"></i>
+                    Sign In
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="form-footer">
+              <p>Don't have an account? <Link to="/register">Sign up here</Link></p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

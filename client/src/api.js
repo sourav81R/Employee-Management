@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // ✅ Base API URL
-const API_URL = "https://employee-management-4p4a.vercel.app/api/employees";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api/employees";
 
 // ====== Fetch all employees ======
 export async function fetchEmployees() {
