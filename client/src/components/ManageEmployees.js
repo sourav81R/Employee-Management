@@ -3,15 +3,16 @@ import axios from "axios";
 
 function ManageEmployees() {
   const [employees, setEmployees] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
   useEffect(() => {
-    axios.get("https://employee-management-4p4a.vercel.app/employees")
+    axios.get(`${API_BASE_URL}/api/employees`)
       .then(res => setEmployees(res.data))
       .catch(err => console.log(err));
-  }, []);
+  }, [API_BASE_URL]);
 
-    const deleteEmployee = (id) => {
-      axios.delete(`https://employee-management-4p4a.vercel.app/employees/${id}`)
+  const deleteEmployee = (id) => {
+    axios.delete(`${API_BASE_URL}/api/employees/${id}`)
       .then(() => setEmployees(employees.filter(emp => emp._id !== id)))
       .catch(err => console.log(err));
   };
@@ -35,7 +36,7 @@ function ManageEmployees() {
               <td>{emp.name}</td>
               <td>{emp.position}</td>
               <td>{emp.department}</td>
-              <td>{emp.salary}</td>
+              <td>₹{emp.salary?.toLocaleString("en-IN")}</td>
               <td>
                 <button>Edit</button>
                 <button onClick={() => deleteEmployee(emp._id)}>Delete</button>
