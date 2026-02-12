@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { buildApiUrl, isApiConfigMissingInProduction } from "../utils/apiBase";
+import { buildApiUrl } from "../utils/apiBase";
 import "./Register.css";
 
 export default function Register() {
@@ -73,10 +73,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      if (isApiConfigMissingInProduction()) {
-        throw new Error("API_BASE_URL_MISSING");
-      }
-
       await axios.post(buildApiUrl("/api/auth/register"), {
         name,
         email,
@@ -88,9 +84,7 @@ export default function Register() {
       navigate("/login");
     } catch (err) {
       const message =
-        err.message === "API_BASE_URL_MISSING"
-          ? "Frontend API URL is not configured. Set REACT_APP_API_BASE_URL on Vercel."
-          : err.response?.status === 405
+        err.response?.status === 405
           ? "Wrong API endpoint/method. Check REACT_APP_API_BASE_URL points to your Render backend."
           : err.response?.data?.message || "Registration failed";
       setError(message);

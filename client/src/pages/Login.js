@@ -3,7 +3,7 @@ import React, { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { buildApiUrl, isApiConfigMissingInProduction } from "../utils/apiBase";
+import { buildApiUrl } from "../utils/apiBase";
 import "./Login.css";
 
 export default function Login() {
@@ -23,10 +23,6 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (isApiConfigMissingInProduction()) {
-        throw new Error("API_BASE_URL_MISSING");
-      }
-
       const res = await axios.post(buildApiUrl("/api/auth/login"), { email, password });
 
       const { token, user } = res.data;
@@ -52,9 +48,7 @@ export default function Login() {
       console.error("Login error:", err);
 
       const message =
-        err.message === "API_BASE_URL_MISSING"
-          ? "Frontend API URL is not configured. Set REACT_APP_API_BASE_URL on Vercel."
-          : err.response?.status === 405
+        err.response?.status === 405
           ? "Wrong API endpoint/method. Check REACT_APP_API_BASE_URL points to your Render backend."
           :
         err.response?.data?.message ??
