@@ -21,7 +21,7 @@ function Navbar() {
     setShowUserMenu(false);
   };
 
-  const roleLower = (user?.role || "").toLowerCase();
+  const roleLower = (user?.role || "").trim().toLowerCase();
 
   const roleClass = useMemo(() => {
     if (roleLower === "admin") return "role-admin";

@@ -15,6 +15,8 @@ export default function ManagerDashboard() {
     : localStorage.getItem("token");
 
   useEffect(() => {
+    if (!user) return;
+
     const role = user?.role?.toLowerCase?.();
     if (role !== "manager" && role !== "admin" && role !== "hr") {
       alert("Access Denied!");
@@ -34,7 +36,7 @@ export default function ManagerDashboard() {
       setTeamInfo(infoData);
 
       const employeeEndpoint = role === "manager"
-        ? buildApiUrl(`/api/manager-employees/${user._id}`)
+        ? buildApiUrl(`/api/manager-employees/${user._id || user.id}`)
         : buildApiUrl("/api/employees");
 
       const empRes = await fetch(employeeEndpoint, {
