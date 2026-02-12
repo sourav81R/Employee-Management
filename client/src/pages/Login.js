@@ -126,7 +126,6 @@ export default function Login() {
               <div className="form-group">
                 <label htmlFor="email">Email Address</label>
                 <div className="input-wrapper">
-                  <i className="fa-solid fa-envelope"></i>
                   <input
                     id="email"
                     type="email"
@@ -141,7 +140,6 @@ export default function Login() {
               <div className="form-group">
                 <label htmlFor="password">Password</label>
                 <div className="input-wrapper">
-                  <i className="fa-solid fa-lock"></i>
                   <input
                     id="password"
                     type="password"
