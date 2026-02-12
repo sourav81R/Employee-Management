@@ -22,9 +22,38 @@ const app = express();
 app.use(helmet());
 app.use(express.json({ limit: "50mb" })); // Increased limit for Base64 images
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+const defaultOrigins = ["http://localhost:3000", "http://localhost:5173"];
+const envOrigins = String(process.env.FRONTEND_ORIGIN || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins]);
+
+const isPrivateNetworkOrigin = (origin) => {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    if (!/^https?:$/.test(protocol)) return false;
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return true;
+    if (/^10\.\d+\.\d+\.\d+$/.test(hostname)) return true;
+    if (/^192\.168\.\d+\.\d+$/.test(hostname)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(hostname)) return true;
+    return false;
+  } catch (_err) {
+    return false;
+  }
+};
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5173", process.env.FRONTEND_ORIGIN || "https://employee-management-ivory-mu.vercel.app"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.has(origin) || isPrivateNetworkOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );

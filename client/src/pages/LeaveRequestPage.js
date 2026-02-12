@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { buildApiUrl } from "../utils/apiBase";
 import '../styles/attendance.css';
 
 const LeaveRequestPage = () => {
@@ -11,8 +12,6 @@ const LeaveRequestPage = () => {
     const [myRequests, setMyRequests] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
-
-    const API_BASE = 'http://localhost:8000';
 
     const token = (contextToken && contextToken !== 'undefined' && contextToken !== 'null')
         ? contextToken
@@ -26,7 +25,7 @@ const LeaveRequestPage = () => {
 
     const fetchMyRequests = async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/leave/my-requests`, {
+            const res = await fetch(buildApiUrl("/api/leave/my-requests"), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -48,7 +47,7 @@ const LeaveRequestPage = () => {
         if (!window.confirm('Are you sure you want to delete this leave request?')) return;
 
         try {
-            const res = await fetch(`${API_BASE}/api/leave/request/${id}`, {
+            const res = await fetch(buildApiUrl(`/api/leave/request/${id}`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -74,8 +73,8 @@ const LeaveRequestPage = () => {
 
         try {
             const url = editingId
-                ? `${API_BASE}/api/leave/request/${editingId}`
-                : `${API_BASE}/api/leave/request`;
+                ? buildApiUrl(`/api/leave/request/${editingId}`)
+                : buildApiUrl("/api/leave/request");
 
             const res = await fetch(url, {
                 method: editingId ? 'PUT' : 'POST',
@@ -152,7 +151,7 @@ const LeaveRequestPage = () => {
                             required
                         />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button type="submit" className="btn-leave">
                             {editingId ? 'Update Request' : (user?.role === 'hr' ? 'Submit to Admin' : 'Submit to HR')}
                         </button>
@@ -243,7 +242,7 @@ const LeaveRequestPage = () => {
                                     )}
 
                                     {(canEdit || canDelete) && (
-                                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
                                             {canEdit && (
                                                 <button onClick={() => handleEditClick(req)} style={{ padding: '5px 12px', cursor: 'pointer', backgroundColor: '#edf2f7', border: '1px solid #cbd5e0', borderRadius: '4px' }}>
                                                     Edit Request

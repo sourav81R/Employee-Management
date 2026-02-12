@@ -5,12 +5,20 @@ import "../styles/navbar.css";
 
 function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
+    setMobileMenuOpen(false);
+    setShowUserMenu(false);
     navigate("/login");
+  };
+
+  const closeMenus = () => {
+    setMobileMenuOpen(false);
+    setShowUserMenu(false);
   };
 
   const roleLower = (user?.role || "").toLowerCase();
@@ -63,10 +71,10 @@ function Navbar() {
   })();
 
   return (
-    <nav className="navbar">
+    <nav className="navbar app-navbar">
       <div className="navbar-glow" aria-hidden="true"></div>
       <div className="navbar-container">
-        <Link to="/" className="navbar-brand">
+        <Link to="/" className="navbar-brand" onClick={closeMenus}>
           <img
             src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=50&h=50&fit=crop"
             alt="Employee Management Logo"
@@ -78,11 +86,25 @@ function Navbar() {
           </div>
         </Link>
 
-        <div className="navbar-links">
+        {user && (
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        )}
+
+        <div className={`navbar-links ${mobileMenuOpen ? "is-open" : ""}`}>
           {user && (
             <>
-              {commonLinks}
-              {roleLinks}
+              <div className="navbar-link-group" onClick={closeMenus}>{commonLinks}</div>
+              <div className="navbar-link-group" onClick={closeMenus}>{roleLinks}</div>
             </>
           )}
 

@@ -1,8 +1,15 @@
-// c:\Employee-Management\client\src\components\AttendanceCapture.js
 import React, { useState, useRef, useEffect, useContext } from "react";
 import axios from "axios";
-import { AuthContext } from "../context/AuthContext"; // Assuming AuthContext provides user info
-import "../styles/AttendanceCapture.css"; // We'll create this CSS file
+import { AuthContext } from "../context/AuthContext";
+import { buildApiUrl } from "../utils/apiBase";
+import "../styles/AttendanceCapture.css";
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+function isSecureOrLocalhost() {
+  if (typeof window === "undefined") return true;
+  return window.isSecureContext || LOCAL_HOSTS.has(window.location.hostname);
+}
 
 export default function AttendanceCapture() {
   const { user } = useContext(AuthContext);
@@ -11,21 +18,15 @@ export default function AttendanceCapture() {
   const fileInputRef = useRef(null);
   const streamRef = useRef(null);
   const [stream, setStream] = useState(null);
-  const [photoData, setPhotoData] = useState(null); // Base64 string of the photo
-  const [location, setLocation] = useState(null); // { latitude, longitude }
+  const [photoData, setPhotoData] = useState(null);
+  const [location, setLocation] = useState(null);
   const [locationName, setLocationName] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
-  const [message, setMessage] = useState(null);
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
-
-  const getAuthHeader = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-  });
+  const [message, setMessage] = useState("Enable camera and location before submitting.");
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -48,7 +49,6 @@ export default function AttendanceCapture() {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
       );
-
       if (!res.ok) return "";
       const data = await res.json();
       return (
@@ -59,8 +59,7 @@ export default function AttendanceCapture() {
         data.address?.village ||
         ""
       );
-    } catch (geoErr) {
-      console.error("Reverse geocode error:", geoErr);
+    } catch (_geoErr) {
       return "";
     }
   };
@@ -68,6 +67,11 @@ export default function AttendanceCapture() {
   const getLocation = async () => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    if (!isSecureOrLocalhost()) {
+      setError("Location requires HTTPS on mobile devices. Open this app over HTTPS.");
       return;
     }
 
@@ -85,22 +89,26 @@ export default function AttendanceCapture() {
         setLocation(nextLocation);
         const place = await resolveLocationName(nextLocation.latitude, nextLocation.longitude);
         setLocationName(place);
-        setMessage(place ? "Location captured with place name." : "Location captured.");
+        setMessage(place ? "Location captured." : "Location captured (no place name found).");
         setLocationLoading(false);
       },
-      (geoError) => {
-        console.error("Error getting location:", geoError);
-        setError("Could not get your location. Please allow location access and try again.");
+      (_geoError) => {
+        setError("Could not get location. Allow location access, then try Refresh Location.");
         setMessage(null);
         setLocationLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
   };
 
   const startCamera = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setMessage("Camera API is unavailable. Use image upload instead.");
+      setError("Camera API is unavailable on this browser. Use Upload Photo.");
+      return;
+    }
+
+    if (!isSecureOrLocalhost()) {
+      setError("Camera requires HTTPS on mobile devices. Open this app over HTTPS.");
       return;
     }
 
@@ -108,19 +116,24 @@ export default function AttendanceCapture() {
     setError(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
       streamRef.current = mediaStream;
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play().catch(() => {});
       }
       setCameraEnabled(true);
-      setMessage("Camera ready. Take photo or upload one.");
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setMessage("Camera is blocked or unavailable. Use image upload instead.");
+      setMessage("Camera ready.");
+    } catch (_err) {
       setCameraEnabled(false);
+      setError("Could not access camera. Allow permission or use Upload Photo.");
     } finally {
       setCameraLoading(false);
     }
@@ -132,25 +145,25 @@ export default function AttendanceCapture() {
       return undefined;
     }
 
-    startCamera();
     getLocation();
-
-    return () => {
-      stopStream();
-    };
+    return () => stopStream();
   }, [user]);
 
   const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext("2d");
-      // Set canvas dimensions to match video feed
-      canvasRef.current.width = videoRef.current.videoWidth;
-      canvasRef.current.height = videoRef.current.videoHeight;
-      context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-      const imageData = canvasRef.current.toDataURL("image/jpeg", 0.8); // Capture as JPEG with 80% quality
-      setPhotoData(imageData);
-      setMessage("Photo captured! Click 'Mark Attendance' to submit.");
+    if (!videoRef.current || !canvasRef.current) return;
+    if (videoRef.current.videoWidth < 2 || videoRef.current.videoHeight < 2) {
+      setError("Camera is not ready yet. Please wait and try again.");
+      return;
     }
+
+    const context = canvasRef.current.getContext("2d");
+    canvasRef.current.width = videoRef.current.videoWidth;
+    canvasRef.current.height = videoRef.current.videoHeight;
+    context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    const imageData = canvasRef.current.toDataURL("image/jpeg", 0.8);
+    setPhotoData(imageData);
+    setMessage("Photo captured. Submit attendance when ready.");
+    setError(null);
   };
 
   const handleFileChange = (event) => {
@@ -161,7 +174,8 @@ export default function AttendanceCapture() {
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
         setPhotoData(reader.result);
-        setMessage("Photo selected. Click 'Mark Attendance' to submit.");
+        setMessage("Photo selected.");
+        setError(null);
       } else {
         setError("Failed to read selected image.");
       }
@@ -171,14 +185,12 @@ export default function AttendanceCapture() {
 
   const clearPhoto = () => {
     setPhotoData(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmitAttendance = async () => {
     if (!photoData || !location) {
-      setError("Please ensure both photo and location are captured before submitting.");
+      setError("Please capture both photo and location before submitting.");
       return;
     }
 
@@ -188,25 +200,27 @@ export default function AttendanceCapture() {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/api/attendance`,
+        buildApiUrl("/api/attendance"),
         {
-          employeeId: user._id, // Assuming user object has _id from AuthContext
           photo: photoData,
           latitude: location.latitude,
           longitude: location.longitude,
           locationName,
           deviceType: detectDeviceType(),
         },
-        getAuthHeader()
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      setMessage("Attendance marked successfully!");
+      setMessage("Attendance marked successfully.");
       clearPhoto();
       stopStream();
     } catch (err) {
       const resData = err.response?.data;
       const isHtml = typeof resData === "string" && resData.trim().startsWith("<");
-      console.error("Error marking attendance:", isHtml ? "Server returned HTML (likely 404)" : (resData || err.message));
-      setError("Failed to mark attendance. " + (isHtml ? "Server endpoint not found." : (resData?.message || "Please try again.")));
+      setError(
+        `Failed to mark attendance. ${
+          isHtml ? "Server endpoint not found." : resData?.message || "Please try again."
+        }`
+      );
       setMessage(null);
     } finally {
       setLoading(false);
@@ -220,15 +234,34 @@ export default function AttendanceCapture() {
       {message && !error && <p className="info-message">{message}</p>}
 
       <div className="camera-feed-wrapper">
-        {!photoData && ( // Only show video feed if no photo has been taken yet
-          <video ref={videoRef} autoPlay playsInline muted className="camera-feed"></video>
-        )}
-        <canvas ref={canvasRef} style={{ display: "none" }}></canvas> {/* Hidden canvas for capturing */}
+        {!photoData && <video ref={videoRef} autoPlay playsInline muted className="camera-feed"></video>}
+        <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
         {photoData && <img src={photoData} alt="Captured Attendance" className="photo-preview" />}
       </div>
 
       <div className="controls">
-        <button onClick={takePhoto} disabled={!stream || loading || cameraLoading || !cameraEnabled} className="btn btn-primary">
+        <button
+          type="button"
+          onClick={startCamera}
+          disabled={cameraLoading || loading || cameraEnabled}
+          className="btn btn-secondary"
+        >
+          {cameraLoading ? "Enabling..." : cameraEnabled ? "Camera Enabled" : "Enable Camera"}
+        </button>
+        <button
+          type="button"
+          onClick={stopStream}
+          disabled={!cameraEnabled || loading}
+          className="btn btn-danger"
+        >
+          Disable Camera
+        </button>
+        <button
+          type="button"
+          onClick={takePhoto}
+          disabled={!stream || loading || cameraLoading || !cameraEnabled}
+          className="btn btn-primary"
+        >
           Take Photo
         </button>
         <button
@@ -253,6 +286,7 @@ export default function AttendanceCapture() {
           </button>
         )}
         <button
+          type="button"
           onClick={handleSubmitAttendance}
           disabled={!photoData || !location || loading}
           className="btn btn-success"
@@ -265,12 +299,12 @@ export default function AttendanceCapture() {
         {location ? (
           <>
             <p>
-              Location: Latitude: {location.latitude.toFixed(6)}, Longitude: {location.longitude.toFixed(6)}
+              Location: Latitude {location.latitude.toFixed(6)}, Longitude {location.longitude.toFixed(6)}
             </p>
             <p>Place: {locationName || "Resolving place name..."}</p>
           </>
         ) : (
-          <p>Waiting for location...</p>
+          <p>Location not captured yet.</p>
         )}
         <button type="button" className="btn btn-link" onClick={getLocation} disabled={locationLoading || loading}>
           {locationLoading ? "Refreshing location..." : "Refresh Location"}

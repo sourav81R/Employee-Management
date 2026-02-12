@@ -20,7 +20,7 @@ export default function AttendanceMap({ latitude, longitude, popupText = "Attend
     const position = [latitude, longitude];
 
     return (
-        <div style={{ height: '400px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ height: 'min(400px, 50vh)', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
             <MapContainer center={position} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

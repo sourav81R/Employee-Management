@@ -1,6 +1,7 @@
 // src/pages/HRDashboard.js
 import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { buildApiUrl } from "../utils/apiBase";
 import "../styles/hrDashboard.css";
 
 export default function HRDashboard() {
@@ -13,8 +14,6 @@ export default function HRDashboard() {
   const [selectedManager, setSelectedManager] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignData, setAssignData] = useState({ userId: "", managerId: "" });
-
-  const API_BASE = "http://localhost:8000";
 
   // Fallback to localStorage if context token is missing or invalid
   const token = (contextToken && contextToken !== "undefined" && contextToken !== "null") 
@@ -32,14 +31,14 @@ export default function HRDashboard() {
   async function loadData() {
     try {
       // Fetch stats
-      const statsRes = await fetch(`${API_BASE}/api/hr/stats`, {
+      const statsRes = await fetch(buildApiUrl("/api/hr/stats"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const statsData = await statsRes.json();
       setStats(statsData);
 
       // Fetch managers
-      const managersRes = await fetch(`${API_BASE}/api/managers`, {
+      const managersRes = await fetch(buildApiUrl("/api/managers"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const managersData = await managersRes.json();
@@ -48,7 +47,7 @@ export default function HRDashboard() {
       }
 
       // Fetch all users
-      const usersRes = await fetch(`${API_BASE}/api/users`, {
+      const usersRes = await fetch(buildApiUrl("/api/users"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const usersData = await usersRes.json();
@@ -57,7 +56,7 @@ export default function HRDashboard() {
       }
 
       // Fetch pending leave requests
-      const leaveRes = await fetch(`${API_BASE}/api/leave/pending`, {
+      const leaveRes = await fetch(buildApiUrl("/api/leave/pending"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const leaveData = await leaveRes.json();
@@ -75,7 +74,7 @@ export default function HRDashboard() {
   async function handleAssignManager(e) {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/api/assign-manager`, {
+      const res = await fetch(buildApiUrl("/api/assign-manager"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +99,7 @@ export default function HRDashboard() {
 
   async function handleLeaveAction(id, status) {
     try {
-      const res = await fetch(`${API_BASE}/api/leave/approve/${id}`, {
+      const res = await fetch(buildApiUrl(`/api/leave/approve/${id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

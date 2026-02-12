@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import AttendanceMap from "./AttendanceMap";
+import { buildApiUrl } from "../utils/apiBase";
 import "../styles/AttendanceHistory.css";
 
 // Helper functions moved outside the component to avoid re-creation on every render
@@ -31,9 +32,6 @@ export default function AttendanceHistory() {
   const [error, setError] = useState(null);
   const [selectedRecord, setSelectedRecord] = useState(null);
 
-  // Ensure no trailing slash in base URL
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:8000").replace(/\/$/, "");
-
   useEffect(() => {
     const fetchAttendance = async () => {
       if (!user) {
@@ -52,8 +50,8 @@ export default function AttendanceHistory() {
       const endpoint =
         user.role?.toLowerCase() === "admin" ||
         user.role?.toLowerCase() === "hr"
-          ? `${API_BASE_URL}/api/attendance/all`
-          : `${API_BASE_URL}/api/attendance/my`;
+          ? buildApiUrl("/api/attendance/all")
+          : buildApiUrl("/api/attendance/my");
 
       try {
         console.log("Fetching attendance from:", endpoint); // Debug log

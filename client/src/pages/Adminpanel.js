@@ -8,6 +8,7 @@ import {
 } from "../api";
 import { AuthContext } from "../context/AuthContext";
 import EmployeeList from "../components/EmployeeList";
+import { buildApiUrl } from "../utils/apiBase";
 import "../App.css";
 import "../styles/adminDashboard.css";
 
@@ -31,8 +32,6 @@ export default function AdminPanel() {
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const role = user?.role;
-
-  const API_BASE = "http://localhost:8000";
 
   // ✅ Load employees on mount
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function AdminPanel() {
 
   async function loadUsers() {
     try {
-      const res = await fetch(`${API_BASE}/api/users`, {
+      const res = await fetch(buildApiUrl("/api/users"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const users = await res.json();
@@ -78,7 +77,7 @@ export default function AdminPanel() {
 
   async function loadAttendance() {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/attendance`, {
+      const res = await fetch(buildApiUrl("/api/admin/attendance"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -92,7 +91,7 @@ export default function AdminPanel() {
 
   async function loadPendingLeaves() {
     try {
-      const res = await fetch(`${API_BASE}/api/leave/pending`, {
+      const res = await fetch(buildApiUrl("/api/leave/pending"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -107,7 +106,7 @@ export default function AdminPanel() {
 
   async function loadLeaveSummary(year) {
     try {
-      const res = await fetch(`${API_BASE}/api/reports/leave-summary?year=${year}`, {
+      const res = await fetch(`${buildApiUrl("/api/reports/leave-summary")}?year=${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -133,7 +132,7 @@ export default function AdminPanel() {
 
   async function handleLeaveAction(id, status) {
     try {
-      const res = await fetch(`${API_BASE}/api/leave/approve/${id}`, {
+      const res = await fetch(buildApiUrl(`/api/leave/approve/${id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

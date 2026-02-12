@@ -14,6 +14,10 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
+.requests-list {
+    width: 100%;
+}
+
 .attendance-card h2, .leave-card h2 {
     margin-top: 0;
     color: #2d3748;
@@ -82,5 +86,25 @@
 @media (max-width: 768px) {
     .attendance-container {
         grid-template-columns: 1fr;
+        margin: 18px auto;
+        padding: 10px;
+        gap: 14px;
+    }
+
+    .attendance-card, .leave-card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .attendance-card h2, .leave-card h2 {
+        font-size: 1.2rem;
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+        font-size: 16px;
+    }
+
+    .btn-checkin, .btn-leave {
+        padding: 12px 14px;
     }
 }

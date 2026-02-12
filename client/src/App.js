@@ -1,11 +1,10 @@
 // src/App.js
-import React, { useContext } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Link,
-  Navigate,
 } from "react-router-dom";
 import Dashboard from "./pages/Dashboard"; // ensure file is src/pages/Dashboard.js
 import AdminPanel from "./pages/Adminpanel"; // ensure file is src/pages/AdminPanel.js (case-sensitive)
@@ -17,7 +16,6 @@ import AttendanceCapture from "./components/AttendanceCapture"; // New Attendanc
 import AttendanceHistory from "./components/AttendanceHistory"; // New Attendance History component
 import LeaveRequestPage from "./pages/LeaveRequestPage"; // Leave Request page
 import Navbar from "./components/navbar"; // Import the Navbar from its dedicated file
-import { AuthProvider, AuthContext } from "./context/AuthContext";
 import "./App.css";
 import { ProtectedRoute } from "./components/ProtectedRoute"; // Import the generic ProtectedRoute
 
@@ -29,21 +27,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute"; // Import the gene
 // Main App Component
 // ================================
 export default function App() {
-  // Define RequireAuth here if it's still needed for some reason,
-  // but it's better to use ProtectedRoute consistently.
-  // If it's not defined here, the route using it will break.
-  // Given the goal of using ProtectedRoute, this should be replaced.
-  function RequireAuth({ children }) {
-    const { user } = useContext(AuthContext);
-    if (!user) return <Navigate to="/login" replace />;
-    return children;
-  }
-
   return (
-    <AuthProvider>
-      <Router>
-        <Navbar />
-        <Routes>
+    <Router>
+      <Navbar />
+      <Routes>
           {/* Dashboard (All logged-in users) */}
           <Route
             path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
@@ -118,8 +105,7 @@ export default function App() {
               </div>
             }
           />
-        </Routes>
-      </Router>
-    </AuthProvider>
+      </Routes>
+    </Router>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { buildApiUrl } from "../utils/apiBase";
 import '../styles/attendance.css';
 
 const Attendance = () => {
@@ -8,8 +9,6 @@ const Attendance = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(true);
 
-    const API_BASE = "http://localhost:8000";
-    
     // Helper to get YYYY-MM-DD in local time
     const getLocalDateString = () => {
         const now = new Date();
@@ -49,7 +48,7 @@ const Attendance = () => {
     const fetchTodayAttendance = async () => {
         try {
             const todayStr = getLocalDateString();
-            const res = await fetch(`${API_BASE}/api/attendance/today?date=${todayStr}`, {
+            const res = await fetch(`${buildApiUrl("/api/attendance/today")}?date=${todayStr}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -68,7 +67,7 @@ const Attendance = () => {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/api/attendance/check-in`, {
+            const res = await fetch(buildApiUrl("/api/attendance/check-in"), {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -93,7 +92,7 @@ const Attendance = () => {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/api/attendance/check-out`, {
+            const res = await fetch(buildApiUrl("/api/attendance/check-out"), {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

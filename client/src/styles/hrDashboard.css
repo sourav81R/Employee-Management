@@ -193,6 +193,7 @@
 .users-table-wrapper {
   overflow-x: auto;
   border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .users-table {
@@ -495,6 +496,10 @@
   .users-table td {
     padding: 10px;
     font-size: 0.85rem;
+  }
+
+  .users-table {
+    min-width: 700px;
   }
 
   .managers-grid {

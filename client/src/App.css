@@ -25,7 +25,7 @@ body {
 /* ================================
    Navbar
 ================================ */
-.navbar {
+.legacy-navbar {
   position: fixed;
   top: 0;
   left: 0;
@@ -40,7 +40,7 @@ body {
   backdrop-filter: blur(6px);
  } 
 
-.navbar-brand {
+.legacy-navbar .navbar-brand {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -50,14 +50,14 @@ body {
   letter-spacing: 0.5px;
 }
 
-.navbar-brand img {
+.legacy-navbar .navbar-brand img {
   height: 36px;
   width: 36px;
   object-fit: contain;
   border-radius: 50%;
 }
 
-.navbar-links {
+.legacy-navbar .navbar-links {
   list-style: none;
   display: flex;
   gap: 20px;
@@ -65,7 +65,7 @@ body {
   padding: 0;
 }
 
-.navbar-links a {
+.legacy-navbar .navbar-links a {
   color: #fff;
   text-decoration: none;
   font-size: 0.95rem;
@@ -74,12 +74,12 @@ body {
   border-radius: 6px;
 }
 
-.navbar-links a:hover {
+.legacy-navbar .navbar-links a:hover {
   background: rgba(255, 255, 255, 0.15);
   color: #ffeb3b;
 }
 /* Navbar.css */
-.navbar {
+.legacy-navbar {
   display: flex;
   justify-content: space-between; /* Title on left, links on right */
   align-items: center;
@@ -89,25 +89,25 @@ body {
   font-family: Arial, sans-serif;
 }
 
-.navbar-title {
+.legacy-navbar .navbar-title {
   font-size: 22px;
   font-weight: bold;
   margin-right: 0px; /* extra gap between title & links */
 }
 
-.nav-links {
+.legacy-navbar .nav-links {
   display: flex;
   gap: 30px; /* spacing between links */
 }
 
-.nav-links a {
+.legacy-navbar .nav-links a {
   text-decoration: none;
   color: white;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
-.nav-links a:hover {
+.legacy-navbar .nav-links a:hover {
   color: #ffd700; /* gold hover effect */
 }
 

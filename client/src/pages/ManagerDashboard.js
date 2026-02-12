@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { buildApiUrl } from "../utils/apiBase";
 import "../styles/managerDashboard.css";
 
 export default function ManagerDashboard() {
@@ -8,8 +9,6 @@ export default function ManagerDashboard() {
   const [teamEmployees, setTeamEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
-  const API_BASE = "http://localhost:8000";
 
   const token = (contextToken && contextToken !== "undefined" && contextToken !== "null")
     ? contextToken
@@ -28,15 +27,15 @@ export default function ManagerDashboard() {
     try {
       const role = user?.role?.toLowerCase?.();
 
-      const infoRes = await fetch(`${API_BASE}/api/manager/team`, {
+      const infoRes = await fetch(buildApiUrl("/api/manager/team"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const infoData = await infoRes.json();
       setTeamInfo(infoData);
 
       const employeeEndpoint = role === "manager"
-        ? `${API_BASE}/api/manager-employees/${user._id}`
-        : `${API_BASE}/api/employees`;
+        ? buildApiUrl(`/api/manager-employees/${user._id}`)
+        : buildApiUrl("/api/employees");
 
       const empRes = await fetch(employeeEndpoint, {
         headers: { Authorization: `Bearer ${token}` },
@@ -56,7 +55,7 @@ export default function ManagerDashboard() {
 
   async function handlePay(empId) {
     try {
-      const res = await fetch(`${API_BASE}/api/employees/pay/${empId}`, {
+      const res = await fetch(buildApiUrl(`/api/employees/pay/${empId}`), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
