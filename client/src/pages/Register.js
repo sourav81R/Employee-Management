@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import { buildApiUrl, isApiConfigMissingInProduction } from "../utils/apiBase";
 import "./Register.css";
 
 export default function Register() {
@@ -13,36 +14,37 @@ export default function Register() {
   const [circleImage, setCircleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&q=80");
   const [decorativeImage, setDecorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
   const navigate = useNavigate();
+  const unsplashAccessKey = process.env.REACT_APP_UNSPLASH_ACCESS_KEY;
 
   // Fetch employee management image from API
   useEffect(() => {
     const fetchImage = async () => {
+      if (!unsplashAccessKey) return;
       try {
-        // Using Unsplash API for employee management related images
         const response = await axios.get(
           "https://api.unsplash.com/search/photos",
           {
             params: {
               query: "employee management team business",
               per_page: 1,
-              client_id: "0d4iBjFzwVbWpBZStSiD5yq3N-Hj8hVbfF1p_SWHwA8", // Unsplash API key
+              client_id: unsplashAccessKey,
             },
           }
         );
         if (response.data.results && response.data.results.length > 0) {
           setCircleImage(response.data.results[0].urls.regular);
         }
-      } catch (err) {
-        console.log("Could not fetch image from API");
-        // Fallback to default if API fails
+      } catch (_err) {
+        // Keep default image if Unsplash fetch fails
       }
     };
     fetchImage();
-  }, []);
+  }, [unsplashAccessKey]);
 
   // Fetch decorative image
   useEffect(() => {
     const fetchDecorativeImage = async () => {
+      if (!unsplashAccessKey) return;
       try {
         const response = await axios.get(
           "https://api.unsplash.com/search/photos",
@@ -50,22 +52,20 @@ export default function Register() {
             params: {
               query: "office team meeting collaboration professional",
               per_page: 1,
-              client_id: "0d4iBjFzwVbWpBZStSiD5yq3N-Hj8hVbfF1p_SWHwA8",
+              client_id: unsplashAccessKey,
             },
           }
         );
         if (response.data.results && response.data.results.length > 0) {
-          console.log("Decorative image loaded:", response.data.results[0].urls.regular);
           setDecorativeImage(response.data.results[0].urls.regular);
         }
-      } catch (err) {
-        console.log("Could not fetch decorative image from API, using fallback");
+      } catch (_err) {
         // Use fallback image if API fails
         setDecorativeImage("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
       }
     };
     fetchDecorativeImage();
-  }, []);
+  }, [unsplashAccessKey]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -73,7 +73,11 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:8000/api/auth/register", {
+      if (isApiConfigMissingInProduction()) {
+        throw new Error("API_BASE_URL_MISSING");
+      }
+
+      await axios.post(buildApiUrl("/api/auth/register"), {
         name,
         email,
         password,
@@ -83,7 +87,13 @@ export default function Register() {
       alert("✅ Registration successful, now login!");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      const message =
+        err.message === "API_BASE_URL_MISSING"
+          ? "Frontend API URL is not configured. Set REACT_APP_API_BASE_URL on Vercel."
+          : err.response?.status === 405
+          ? "Wrong API endpoint/method. Check REACT_APP_API_BASE_URL points to your Render backend."
+          : err.response?.data?.message || "Registration failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
