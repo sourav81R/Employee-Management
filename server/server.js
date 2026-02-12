@@ -23,7 +23,11 @@ app.use(helmet());
 app.use(express.json({ limit: "50mb" })); // Increased limit for Base64 images
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-const defaultOrigins = ["http://localhost:3000", "http://localhost:5173"];
+const defaultOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://employee-management-ivory-mu.vercel.app",
+];
 const envOrigins = String(process.env.FRONTEND_ORIGIN || "")
   .split(",")
   .map((value) => value.trim())
@@ -45,13 +49,23 @@ const isPrivateNetworkOrigin = (origin) => {
   }
 };
 
+const isVercelPreviewOrigin = (origin) => {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    return protocol === "https:" && hostname.endsWith(".vercel.app");
+  } catch (_err) {
+    return false;
+  }
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin) || isPrivateNetworkOrigin(origin)) {
+      if (allowedOrigins.has(origin) || isPrivateNetworkOrigin(origin) || isVercelPreviewOrigin(origin)) {
         return callback(null, true);
       }
+      console.warn(`CORS blocked for origin: ${origin}`);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
