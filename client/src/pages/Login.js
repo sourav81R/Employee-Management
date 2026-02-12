@@ -5,8 +5,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Login.css";
 
-// Optional: set a base URL centrally (you can also do this in a separate api client file)
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+// Resolve API base URL from env for production, and fall back to same-origin/proxy in dev.
+const rawApiBaseUrl = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_URL || "";
+const normalizedApiBaseUrl = rawApiBaseUrl.replace(/\/$/, "");
+axios.defaults.baseURL = normalizedApiBaseUrl.endsWith("/api")
+  ? normalizedApiBaseUrl.slice(0, -4)
+  : normalizedApiBaseUrl;
 
 export default function Login() {
   const [email, setEmail] = useState("");
