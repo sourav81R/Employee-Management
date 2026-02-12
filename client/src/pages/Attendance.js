@@ -26,6 +26,13 @@ const Attendance = () => {
         return `${hours}h ${minutes}m`;
     };
 
+    const formatMinutesAsHours = (minutes) => {
+        const total = Number(minutes || 0);
+        const h = Math.floor(total / 60);
+        const m = total % 60;
+        return `${h}h ${m}m`;
+    };
+
     // Fallback to localStorage if context token is missing or invalid
     const token = (contextToken && contextToken !== "undefined" && contextToken !== "null") 
         ? contextToken 
@@ -95,7 +102,8 @@ const Attendance = () => {
                 body: JSON.stringify({ date: getLocalDateString() }) 
             });
             if (res.ok) {
-                setMessage("Checked out successfully!");
+                const data = await res.json();
+                setMessage(data.workHoursMessage || "Checked out successfully!");
                 fetchTodayAttendance();
             } else {
                 const data = await res.json();
@@ -121,11 +129,18 @@ const Attendance = () => {
                 {attendance ? (
                     <div className="status-present">
                         <p>✅ Status: Checked In</p>
-                        <p>Check-In Time: {new Date(attendance.checkIn).toLocaleTimeString()}</p>
+                        <p>Check-In Time: {new Date(attendance.checkIn || attendance.timestamp).toLocaleTimeString()}</p>
                         {attendance.checkOut ? (
                             <>
                                 <p>Check-Out Time: {new Date(attendance.checkOut).toLocaleTimeString()}</p>
-                                <p style={{ fontWeight: 'bold', marginTop: '10px', color: '#4a5568' }}>Total Duration: {calculateWorkHours(attendance.checkIn, attendance.checkOut)}</p>
+                                <p style={{ fontWeight: 'bold', marginTop: '10px', color: '#4a5568' }}>
+                                    Total Duration: {attendance.workedMinutes ? formatMinutesAsHours(attendance.workedMinutes) : calculateWorkHours(attendance.checkIn || attendance.timestamp, attendance.checkOut)}
+                                </p>
+                                {attendance.salaryCut && (
+                                    <p style={{ color: '#c53030', fontWeight: 'bold', marginTop: '8px' }}>
+                                        Salary Cut: Worked less than 8 hours today (short by {formatMinutesAsHours(attendance.shortByMinutes)}).
+                                    </p>
+                                )}
                             </>
                         ) : (
                             <button onClick={handleCheckOut} className="btn-checkin" style={{ marginTop: '15px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>

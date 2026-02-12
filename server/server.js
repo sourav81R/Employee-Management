@@ -20,7 +20,8 @@ const app = express();
    Basic middleware
    ----------------------- */
 app.use(helmet());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // Increased limit for Base64 images
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(
   cors({
     origin: ["http://localhost:3000", "http://localhost:5173", process.env.FRONTEND_ORIGIN || "https://employee-management-ivory-mu.vercel.app"],
@@ -331,11 +332,16 @@ app.get("/api/hr/stats", verifyToken, requireRole("admin", "hr"), async (req, re
   }
 });
 
-// Get manager's team info
-app.get("/api/manager/team", verifyToken, requireRole("manager", "admin"), async (req, res) => {
+// Get manager/team info
+app.get("/api/manager/team", verifyToken, requireRole("manager", "admin", "hr"), async (req, res) => {
   try {
-    const manager = await User.findById(req.user.id);
-    const team = await Employee.find({ managerId: manager._id });
+    let team = [];
+    if (req.user.role === "manager") {
+      team = await Employee.find({ managerId: req.user.id });
+    } else {
+      // HR/Admin view org-wide team summary from this dashboard endpoint.
+      team = await Employee.find();
+    }
     const paidCount = team.filter((e) => e.lastPaid).length;
     const unpaidCount = team.length - paidCount;
 
@@ -355,6 +361,67 @@ app.get("/api/manager/team", verifyToken, requireRole("manager", "admin"), async
    Attendance & Leave APIs
    ----------------------- */
 
+// ✅ NEW: Mark Attendance with Photo & Location
+app.post("/api/attendance", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
+  try {
+    const { photo, latitude, longitude, locationName, deviceType } = req.body;
+    const numericLat = Number(latitude);
+    const numericLng = Number(longitude);
+
+    if (!photo || !Number.isFinite(numericLat) || !Number.isFinite(numericLng)) {
+      return res.status(400).json({ message: "Missing photo or location data" });
+    }
+
+    const newRecord = await Attendance.create({
+      employeeId: req.user.id, // Link to logged-in user
+      photoUrl: photo,
+      latitude: numericLat,
+      longitude: numericLng,
+      locationName: typeof locationName === "string" ? locationName.trim() : "",
+      deviceType: typeof deviceType === "string" ? deviceType : "unknown",
+      timestamp: new Date(),
+    });
+
+    return res.status(201).json({ message: "Attendance captured successfully", data: newRecord });
+  } catch (err) {
+    console.error("Capture attendance error:", err);
+    return res.status(500).json({ message: "Failed to capture attendance" });
+  }
+});
+
+// ✅ NEW: Get My Attendance History
+app.get("/api/attendance/my", verifyToken, async (req, res) => {
+  try {
+    console.log(`[API] Fetching attendance history for user: ${req.user.id}`);
+    // Fetch records for the logged-in user
+    const records = await Attendance.find({ 
+      $or: [{ employeeId: req.user.id }, { userId: req.user.id }] 
+    })
+      .sort({ timestamp: -1, createdAt: -1 })
+      .populate("employeeId", "name email")
+      .populate("userId", "name email");
+    return res.json(records);
+  } catch (err) {
+    console.error("Get my attendance error:", err);
+    return res.status(500).json({ message: "Failed to fetch history" });
+  }
+});
+
+// ✅ NEW: Get All Attendance (Admin/HR)
+app.get("/api/attendance/all", verifyToken, requireRole("admin", "hr"), async (req, res) => {
+  try {
+    console.log(`[API] Fetching ALL attendance records for admin/hr: ${req.user.id}`);
+    const records = await Attendance.find()
+      .sort({ timestamp: -1, createdAt: -1 })
+      .populate("employeeId", "name email")
+      .populate("userId", "name email");
+    return res.json(records);
+  } catch (err) {
+    console.error("Get all attendance error:", err);
+    return res.status(500).json({ message: "Failed to fetch all records" });
+  }
+});
+
 // Mark daily attendance
 app.post("/api/attendance/check-in", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
   try {
@@ -364,7 +431,16 @@ app.post("/api/attendance/check-in", verifyToken, requireRole("admin", "hr", "ma
     const existing = await Attendance.findOne({ userId: req.user.id, date: today });
     if (existing) return res.status(400).json({ message: "Already checked in today" });
 
-    const record = await Attendance.create({ userId: req.user.id, date: today });
+    const now = new Date();
+    const record = await Attendance.create({
+      userId: req.user.id,
+      date: today,
+      checkIn: now,
+      timestamp: now,
+      workedMinutes: 0,
+      salaryCut: false,
+      shortByMinutes: 0,
+    });
     return res.status(201).json(record);
   } catch (err) {
     console.error("Check-in error:", err);
@@ -388,9 +464,27 @@ app.post("/api/attendance/check-out", verifyToken, requireRole("admin", "hr", "m
       return res.status(400).json({ message: "Already checked out today" });
     }
 
-    record.checkOut = new Date();
+    const now = new Date();
+    const checkInTime = record.checkIn || record.timestamp;
+    if (!checkInTime) {
+      return res.status(400).json({ message: "Check-in time missing. Please contact admin." });
+    }
+
+    const workedMinutes = Math.max(0, Math.floor((now.getTime() - new Date(checkInTime).getTime()) / (1000 * 60)));
+    const minimumMinutes = 8 * 60;
+    const applySalaryCut = req.user.role === "employee" && workedMinutes < minimumMinutes;
+
+    record.checkOut = now;
+    record.workedMinutes = workedMinutes;
+    record.shortByMinutes = applySalaryCut ? (minimumMinutes - workedMinutes) : 0;
+    record.salaryCut = applySalaryCut;
     await record.save();
-    return res.json(record);
+    return res.json({
+      ...record.toObject(),
+      workHoursMessage: applySalaryCut
+        ? `Worked ${workedMinutes} minute(s). Less than 8 hours, salary cut applies for this day.`
+        : `Worked ${workedMinutes} minute(s). Minimum daily hours completed.`,
+    });
   } catch (err) {
     console.error("Check-out error:", err);
     return res.status(500).json({ message: "Failed to mark check-out" });
@@ -409,14 +503,131 @@ app.get("/api/attendance/today", verifyToken, requireRole("admin", "hr", "manage
   }
 });
 
+const YEARLY_PAID_LEAVE_LIMIT = 18;
+const CAPPED_LEAVE_ROLES = new Set(["employee", "manager", "hr"]);
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const normalizeToUtcDateOnly = (value) => {
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return null;
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+};
+
+const toDateKey = (utcDate) => utcDate.toISOString().split("T")[0];
+
+const getDateKeysByYear = (startUtc, endUtc) => {
+  const byYear = new Map();
+  for (let t = startUtc.getTime(); t <= endUtc.getTime(); t += DAY_IN_MS) {
+    const current = new Date(t);
+    const year = String(current.getUTCFullYear());
+    if (!byYear.has(year)) byYear.set(year, new Set());
+    byYear.get(year).add(toDateKey(current));
+  }
+  return byYear;
+};
+
+const getUsedLeaveDaysByYear = async ({ userId, excludeRequestId }) => {
+  const query = {
+    userId,
+    status: { $ne: "Rejected" },
+  };
+
+  if (excludeRequestId) {
+    query._id = { $ne: excludeRequestId };
+  }
+
+  const existingLeaves = await LeaveRequest.find(query).select("startDate endDate");
+  const usedByYear = new Map();
+
+  for (const leave of existingLeaves) {
+    const s = normalizeToUtcDateOnly(leave.startDate);
+    const e = normalizeToUtcDateOnly(leave.endDate);
+    if (!s || !e || s > e) continue;
+
+    for (let t = s.getTime(); t <= e.getTime(); t += DAY_IN_MS) {
+      const current = new Date(t);
+      const year = String(current.getUTCFullYear());
+      if (!usedByYear.has(year)) usedByYear.set(year, new Set());
+      usedByYear.get(year).add(toDateKey(current));
+    }
+  }
+
+  return usedByYear;
+};
+
+const computeLeaveBreakdown = async ({ userId, role, startUtc, endUtc, excludeRequestId }) => {
+  const requestedByYear = getDateKeysByYear(startUtc, endUtc);
+  let totalDays = 0;
+  let paidDays = 0;
+  let unpaidDays = 0;
+
+  for (const [, dateSet] of requestedByYear.entries()) {
+    totalDays += dateSet.size;
+  }
+
+  // Admin is not capped under this policy.
+  if (!CAPPED_LEAVE_ROLES.has((role || "").toLowerCase())) {
+    return { totalDays, paidDays: totalDays, unpaidDays: 0, salaryCut: false };
+  }
+
+  const usedByYear = await getUsedLeaveDaysByYear({ userId, excludeRequestId });
+
+  for (const [year, requestedDates] of requestedByYear.entries()) {
+    const alreadyUsed = usedByYear.get(year)?.size || 0;
+    const remainingPaid = Math.max(0, YEARLY_PAID_LEAVE_LIMIT - alreadyUsed);
+    const paidForYear = Math.min(remainingPaid, requestedDates.size);
+    paidDays += paidForYear;
+    unpaidDays += requestedDates.size - paidForYear;
+  }
+
+  return {
+    totalDays,
+    paidDays,
+    unpaidDays,
+    salaryCut: unpaidDays > 0,
+  };
+};
+
+const getInclusiveLeaveDays = (startDateValue, endDateValue) => {
+  const start = normalizeToUtcDateOnly(startDateValue);
+  const end = normalizeToUtcDateOnly(endDateValue);
+  if (!start || !end || end < start) return 0;
+  return Math.floor((end.getTime() - start.getTime()) / DAY_IN_MS) + 1;
+};
+
+const withComputedLeaveFields = (leaveRecord) => {
+  const obj = typeof leaveRecord?.toObject === "function" ? leaveRecord.toObject() : { ...leaveRecord };
+  const existingTotal = Number(obj.totalDays) || 0;
+  const existingPaid = Number(obj.paidDays) || 0;
+  const existingUnpaid = Number(obj.unpaidDays) || 0;
+
+  // For legacy records created before day fields existed.
+  if (existingTotal <= 0 && existingPaid <= 0 && existingUnpaid <= 0) {
+    const computedTotal = getInclusiveLeaveDays(obj.startDate, obj.endDate);
+    return {
+      ...obj,
+      totalDays: computedTotal,
+      paidDays: computedTotal,
+      unpaidDays: 0,
+      salaryCut: false,
+    };
+  }
+
+  return obj;
+};
+
 // Submit leave request
 app.post("/api/leave/request", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
   try {
     console.log(`[API] Leave request received for user: ${req.user.id}`);
     const { startDate, endDate, reason } = req.body;
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = normalizeToUtcDateOnly(startDate);
+    const end = normalizeToUtcDateOnly(endDate);
+
+    if (!start || !end) {
+      return res.status(400).json({ message: "Invalid start or end date." });
+    }
 
     if (start > end) {
       return res.status(400).json({ message: "Start date cannot be after end date." });
@@ -431,10 +642,26 @@ app.post("/api/leave/request", verifyToken, requireRole("admin", "hr", "manager"
     });
 
     if (overlappingRequest) {
-      return res.status(400).json({ message: "You already have a pending or approved leave request overlapping with these dates." });
+      return res.status(400).json({ message: "Duplicate leave is not allowed. You already requested leave for one or more of these dates." });
     }
 
-    const request = await LeaveRequest.create({ userId: req.user.id, startDate, endDate, reason });
+    const breakdown = await computeLeaveBreakdown({
+      userId: req.user.id,
+      role: req.user.role,
+      startUtc: start,
+      endUtc: end,
+    });
+
+    const request = await LeaveRequest.create({
+      userId: req.user.id,
+      startDate: start,
+      endDate: end,
+      reason,
+      totalDays: breakdown.totalDays,
+      paidDays: breakdown.paidDays,
+      unpaidDays: breakdown.unpaidDays,
+      salaryCut: breakdown.salaryCut,
+    });
 
     // --- Send Email Notification to HR ---
     try {
@@ -459,7 +686,12 @@ app.post("/api/leave/request", verifyToken, requireRole("admin", "hr", "manager"
       // was successfully saved in the database.
     }
 
-    return res.status(201).json(request);
+    return res.status(201).json({
+      ...request.toObject(),
+      policyMessage: breakdown.salaryCut
+        ? `Yearly paid leave limit is ${YEARLY_PAID_LEAVE_LIMIT} days. ${breakdown.unpaidDays} day(s) will be unpaid (salary cut).`
+        : `Leave request submitted. ${breakdown.paidDays}/${breakdown.totalDays} day(s) are within yearly paid leave policy.`,
+    });
   } catch (err) {
     console.error("Leave request error:", err);
     return res.status(500).json({ message: "Failed to submit leave request" });
@@ -477,8 +709,12 @@ app.put("/api/leave/request/:id", verifyToken, async (req, res) => {
       return res.status(400).json({ message: "Only pending requests can be edited." });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = normalizeToUtcDateOnly(startDate);
+    const end = normalizeToUtcDateOnly(endDate);
+    if (!start || !end) {
+      return res.status(400).json({ message: "Invalid start or end date." });
+    }
+
     if (start > end) {
       return res.status(400).json({ message: "Start date cannot be after end date." });
     }
@@ -493,11 +729,38 @@ app.put("/api/leave/request/:id", verifyToken, async (req, res) => {
     });
 
     if (overlappingRequest) {
-      return res.status(400).json({ message: "You already have a pending or approved leave request overlapping with these dates." });
+      return res.status(400).json({ message: "Duplicate leave is not allowed. You already requested leave for one or more of these dates." });
     }
 
-    const updated = await LeaveRequest.findByIdAndUpdate(req.params.id, { startDate, endDate, reason }, { new: true });
-    return res.json({ message: "Leave request updated", request: updated });
+    const breakdown = await computeLeaveBreakdown({
+      userId: req.user.id,
+      role: req.user.role,
+      startUtc: start,
+      endUtc: end,
+      excludeRequestId: req.params.id,
+    });
+
+    const updated = await LeaveRequest.findByIdAndUpdate(
+      req.params.id,
+      {
+        startDate: start,
+        endDate: end,
+        reason,
+        totalDays: breakdown.totalDays,
+        paidDays: breakdown.paidDays,
+        unpaidDays: breakdown.unpaidDays,
+        salaryCut: breakdown.salaryCut,
+      },
+      { new: true }
+    );
+
+    return res.json({
+      message: "Leave request updated",
+      request: updated,
+      policyMessage: breakdown.salaryCut
+        ? `Yearly paid leave limit is ${YEARLY_PAID_LEAVE_LIMIT} days. ${breakdown.unpaidDays} day(s) will be unpaid (salary cut).`
+        : `Leave request updated. ${breakdown.paidDays}/${breakdown.totalDays} day(s) are within yearly paid leave policy.`,
+    });
   } catch (err) {
     console.error("Update leave request error:", err);
     return res.status(500).json({ message: "Failed to update leave request" });
@@ -510,8 +773,8 @@ app.delete("/api/leave/request/:id", verifyToken, async (req, res) => {
     const leaveReq = await LeaveRequest.findOne({ _id: req.params.id, userId: req.user.id });
 
     if (!leaveReq) return res.status(404).json({ message: "Leave request not found" });
-    if (leaveReq.status !== "Pending") {
-      return res.status(400).json({ message: "Only pending requests can be deleted." });
+    if (leaveReq.status === "Approved") {
+      return res.status(400).json({ message: "Approved leave request cannot be deleted." });
     }
 
     await LeaveRequest.findByIdAndDelete(req.params.id);
@@ -526,7 +789,7 @@ app.delete("/api/leave/request/:id", verifyToken, async (req, res) => {
 app.get("/api/leave/pending", verifyToken, requireRole("hr", "admin"), async (req, res) => {
   try {
     const requests = await LeaveRequest.find({ status: "Pending" }).populate("userId", "name email role");
-    return res.json(requests);
+    return res.json(requests.map(withComputedLeaveFields));
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch leave requests" });
   }
@@ -536,9 +799,110 @@ app.get("/api/leave/pending", verifyToken, requireRole("hr", "admin"), async (re
 app.get("/api/leave/my-requests", verifyToken, async (req, res) => {
   try {
     const requests = await LeaveRequest.find({ userId: req.user.id }).sort({ createdAt: -1 });
-    return res.json(requests);
+    return res.json(requests.map(withComputedLeaveFields));
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch your leave requests" });
+  }
+});
+
+// Yearly leave summary report (Admin/HR)
+app.get("/api/reports/leave-summary", verifyToken, requireRole("admin", "hr"), async (req, res) => {
+  try {
+    const year = Number(req.query.year) || new Date().getUTCFullYear();
+    if (!Number.isInteger(year) || year < 2000 || year > 3000) {
+      return res.status(400).json({ message: "Invalid year" });
+    }
+
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const yearEnd = new Date(Date.UTC(year, 11, 31));
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const overlapDays = (s1, e1, s2, e2) => {
+      const start = Math.max(s1.getTime(), s2.getTime());
+      const end = Math.min(e1.getTime(), e2.getTime());
+      if (end < start) return 0;
+      return Math.floor((end - start) / dayMs) + 1;
+    };
+
+    const addDays = (date, days) => new Date(date.getTime() + (days * dayMs));
+    const toUtcDateOnly = (value) => {
+      const d = new Date(value);
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    };
+
+    const leaves = await LeaveRequest.find({
+      status: { $in: ["Pending", "Approved"] },
+      startDate: { $lte: yearEnd },
+      endDate: { $gte: yearStart },
+    }).populate("userId", "name email role");
+
+    const summaryMap = new Map();
+    const getBucket = (user) => {
+      const id = String(user?._id || "unknown");
+      if (!summaryMap.has(id)) {
+        summaryMap.set(id, {
+          userId: id,
+          name: user?.name || "Unknown",
+          email: user?.email || "N/A",
+          role: user?.role || "N/A",
+          approvedPaidDays: 0,
+          approvedUnpaidDays: 0,
+          approvedTotalDays: 0,
+          pendingPaidDays: 0,
+          pendingUnpaidDays: 0,
+          pendingTotalDays: 0,
+        });
+      }
+      return summaryMap.get(id);
+    };
+
+    for (const reqLeave of leaves) {
+      if (!reqLeave.userId) continue;
+      const bucket = getBucket(reqLeave.userId);
+
+      const leaveStart = toUtcDateOnly(reqLeave.startDate);
+      const leaveEnd = toUtcDateOnly(reqLeave.endDate);
+      const overlapTotal = overlapDays(leaveStart, leaveEnd, yearStart, yearEnd);
+      if (overlapTotal <= 0) continue;
+
+      const totalDays = Math.max(1, Number(reqLeave.totalDays) || 1);
+      const paidDays = Math.max(0, Number(reqLeave.paidDays) || 0);
+      const unpaidDays = Math.max(0, Number(reqLeave.unpaidDays) || 0);
+
+      const paidEnd = paidDays > 0 ? addDays(leaveStart, paidDays - 1) : null;
+      const unpaidStart = unpaidDays > 0 ? addDays(leaveStart, paidDays) : null;
+
+      const overlapPaid = paidEnd ? overlapDays(leaveStart, paidEnd, yearStart, yearEnd) : 0;
+      const overlapUnpaid = unpaidStart ? overlapDays(unpaidStart, leaveEnd, yearStart, yearEnd) : 0;
+
+      // Fallback for legacy rows without paid/unpaid fields
+      const normalizedPaid = (paidDays === 0 && unpaidDays === 0)
+        ? Math.min(overlapTotal, Math.round((overlapTotal / totalDays) * totalDays))
+        : overlapPaid;
+      const normalizedUnpaid = (paidDays === 0 && unpaidDays === 0)
+        ? 0
+        : overlapUnpaid;
+
+      if (reqLeave.status === "Approved") {
+        bucket.approvedTotalDays += overlapTotal;
+        bucket.approvedPaidDays += normalizedPaid;
+        bucket.approvedUnpaidDays += normalizedUnpaid;
+      } else {
+        bucket.pendingTotalDays += overlapTotal;
+        bucket.pendingPaidDays += normalizedPaid;
+        bucket.pendingUnpaidDays += normalizedUnpaid;
+      }
+    }
+
+    return res.json({
+      year,
+      paidLeaveLimit: YEARLY_PAID_LEAVE_LIMIT,
+      generatedAt: new Date().toISOString(),
+      employees: Array.from(summaryMap.values()).sort((a, b) => a.name.localeCompare(b.name)),
+    });
+  } catch (err) {
+    console.error("Leave summary report error:", err);
+    return res.status(500).json({ message: "Failed to generate leave summary report" });
   }
 });
 
@@ -558,7 +922,7 @@ app.get("/api/admin/attendance", verifyToken, requireRole("admin"), async (req, 
 app.get("/api/admin/leaves", verifyToken, requireRole("admin"), async (req, res) => {
   try {
     const requests = await LeaveRequest.find().populate("userId", "name email role");
-    return res.json(requests);
+    return res.json(requests.map(withComputedLeaveFields));
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch all leave requests" });
   }

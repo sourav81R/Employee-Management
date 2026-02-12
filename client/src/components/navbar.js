@@ -1,11 +1,9 @@
-import React, { useState, useContext } from "react";
+import React, { useMemo, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "../styles/navbar.css";
 
-
 function Navbar() {
-  const [hoveredLink, setHoveredLink] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -15,150 +13,79 @@ function Navbar() {
     navigate("/login");
   };
 
-  const navLinksStyle = {
-    textDecoration: "none",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: "500",
-    padding: "8px 16px",
-    borderRadius: "5px",
-    transition: "all 0.3s ease",
-    display: "inline-block",
-    cursor: "pointer"
-  };
+  const roleLower = (user?.role || "").toLowerCase();
 
-  const renderNavLinks = () => {
-    if (!user) return null;
+  const roleClass = useMemo(() => {
+    if (roleLower === "admin") return "role-admin";
+    if (roleLower === "hr") return "role-hr";
+    if (roleLower === "manager") return "role-manager";
+    return "role-employee";
+  }, [roleLower]);
 
-    const commonLinks = (
-      <>
-        <Link
-          to="/"
-          className="nav-link"
-          onMouseEnter={() => setHoveredLink("dashboard")}
-          onMouseLeave={() => setHoveredLink(null)}
-          style={{
-            ...navLinksStyle,
-            backgroundColor: hoveredLink === "dashboard" ? "rgba(255, 255, 255, 0.2)" : "transparent"
-          }}
-        >
-          Dashboard
-        </Link>
-      </>
-    );
+  const commonLinks = (
+    <>
+      <Link to="/" className="nav-link">Dashboard</Link>
+      <Link to="/attendance" className="nav-link">Mark Attendance</Link>
+      <Link to="/attendance-history" className="nav-link">Attendance History</Link>
+      {roleLower !== "admin" && (
+        <Link to="/leave-request" className="nav-link">Apply Leave</Link>
+      )}
+    </>
+  );
 
-    if (user.role?.toLowerCase() === "admin") {
+  const roleLinks = (() => {
+    if (roleLower === "admin") {
       return (
         <>
-          {commonLinks}
-          <Link
-            to="/admin"
-            className="nav-link admin-link"
-            onMouseEnter={() => setHoveredLink("admin")}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{
-              ...navLinksStyle,
-              backgroundColor: hoveredLink === "admin" ? "#ff6b6b" : "#e63946",
-              marginLeft: "10px",
-              fontWeight: "600"
-            }}
-          >
-            🔐 Admin Panel
-          </Link>
-          <Link
-            to="/hr"
-            className="nav-link hr-link"
-            onMouseEnter={() => setHoveredLink("hr")}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{
-              ...navLinksStyle,
-              backgroundColor: hoveredLink === "hr" ? "#4ade80" : "#22c55e",
-              marginLeft: "5px",
-              fontWeight: "600"
-            }}
-          >
-            👔 HR Dashboard
-          </Link>
-          <Link
-            to="/manager"
-            className="nav-link manager-link"
-            onMouseEnter={() => setHoveredLink("manager")}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{
-              ...navLinksStyle,
-              backgroundColor: hoveredLink === "manager" ? "#60a5fa" : "#3b82f6",
-              marginLeft: "5px",
-              fontWeight: "600"
-            }}
-          >
-            🎯 Team Dashboard
-          </Link>
+          <Link to="/admin" className="nav-link nav-link-emphasis nav-admin">Admin Panel</Link>
+          <Link to="/hr" className="nav-link nav-link-emphasis nav-hr">HR Dashboard</Link>
+          <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
         </>
       );
     }
 
-    if (user.role === "hr") {
+    if (roleLower === "hr") {
       return (
         <>
-          {commonLinks}
-          <Link
-            to="/hr"
-            className="nav-link hr-link"
-            onMouseEnter={() => setHoveredLink("hr")}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{
-              ...navLinksStyle,
-              backgroundColor: hoveredLink === "hr" ? "#4ade80" : "#22c55e",
-              marginLeft: "10px",
-              fontWeight: "600"
-            }}
-          >
-            👔 HR Dashboard
-          </Link>
+          <Link to="/hr" className="nav-link nav-link-emphasis nav-hr">HR Dashboard</Link>
+          <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
         </>
       );
     }
 
-    if (user.role === "manager") {
+    if (roleLower === "manager") {
       return (
-        <>
-          {commonLinks}
-          <Link
-            to="/manager"
-            className="nav-link manager-link"
-            onMouseEnter={() => setHoveredLink("manager")}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{
-              ...navLinksStyle,
-              backgroundColor: hoveredLink === "manager" ? "#60a5fa" : "#3b82f6",
-              marginLeft: "10px",
-              fontWeight: "600"
-            }}
-          >
-            🎯 Team
-          </Link>
-        </>
+        <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
       );
     }
 
-    return commonLinks;
-  };
+    return null;
+  })();
 
   return (
     <nav className="navbar">
+      <div className="navbar-glow" aria-hidden="true"></div>
       <div className="navbar-container">
         <Link to="/" className="navbar-brand">
-          <img 
-            src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=50&h=50&fit=crop" 
-            alt="Employee Management Logo" 
+          <img
+            src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=50&h=50&fit=crop"
+            alt="Employee Management Logo"
             className="brand-logo"
           />
-          <span className="brand-text">Employee Management</span>
+          <div className="brand-copy">
+            <span className="brand-title">Employee Management</span>
+            <span className="brand-subtitle">People. Payroll. Performance.</span>
+          </div>
         </Link>
-        
+
         <div className="navbar-links">
-          {renderNavLinks()}
-          
+          {user && (
+            <>
+              {commonLinks}
+              {roleLinks}
+            </>
+          )}
+
           {user && (
             <div className="user-menu">
               <button
@@ -166,11 +93,13 @@ function Navbar() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
                 <span className="user-avatar">{user.name?.charAt(0) || "U"}</span>
-                <span className="user-name">{user.name}</span>
-                <span className="user-role-badge">{user.role}</span>
-                <span className="dropdown-icon">▼</span>
+                <span className="user-details">
+                  <span className="user-name">{user.name}</span>
+                  <span className={`user-role-badge ${roleClass}`}>{user.role}</span>
+                </span>
+                <span className="dropdown-icon">▾</span>
               </button>
-              
+
               {showUserMenu && (
                 <div className="user-dropdown">
                   <div className="dropdown-header">
@@ -179,7 +108,7 @@ function Navbar() {
                   </div>
                   <div className="dropdown-divider"></div>
                   <button className="dropdown-item" onClick={handleLogout}>
-                    🚪 Logout
+                    Logout
                   </button>
                 </div>
               )}

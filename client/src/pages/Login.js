@@ -17,7 +17,7 @@ export default function Login() {
   const [decorativeImage, setDecorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
 
   const navigate = useNavigate();
-  const { setUser } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,15 +33,11 @@ export default function Login() {
         throw new Error("Invalid server response — missing token or user");
       }
 
-      // Save token + user
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // Save token + user in auth context/localStorage
+      login(user, token);
 
       // Set default Authorization header for future axios requests
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // Update global auth context
-      setUser(user);
 
       // Clear sensitive data from state
       setPassword("");

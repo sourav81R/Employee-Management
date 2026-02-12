@@ -4,7 +4,15 @@ import { Navigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 export function ProtectedRoute({ children, requiredRoles }) {
-  const { user } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
+
+  if (authLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px" }}>
+        <p>Loading session...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;

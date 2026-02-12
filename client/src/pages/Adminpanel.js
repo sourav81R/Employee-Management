@@ -18,6 +18,8 @@ export default function AdminPanel() {
   const [managerUsers, setManagerUsers] = useState([]);
   const [attendanceLog, setAttendanceLog] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState([]);
+  const [leaveSummaryYear, setLeaveSummaryYear] = useState(new Date().getFullYear());
   const [form, setForm] = useState({
     employeeId: "",
     name: "",
@@ -41,8 +43,9 @@ export default function AdminPanel() {
     if (role?.toLowerCase() === "admin") {
       loadAttendance();
       loadPendingLeaves();
+      loadLeaveSummary(leaveSummaryYear);
     }
-  }, [role, token]);
+  }, [role, token, leaveSummaryYear]);
 
   async function loadEmployees() {
     try {
@@ -99,6 +102,23 @@ export default function AdminPanel() {
       }
     } catch (err) {
       console.error("Failed to fetch pending leaves:", err);
+    }
+  }
+
+  async function loadLeaveSummary(year) {
+    try {
+      const res = await fetch(`${API_BASE}/api/reports/leave-summary?year=${year}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.employees)) {
+        setLeaveSummary(data.employees);
+      } else {
+        setLeaveSummary([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leave summary:", err);
+      setLeaveSummary([]);
     }
   }
 
@@ -402,6 +422,7 @@ export default function AdminPanel() {
                   <th>Role</th>
                   <th>Dates</th>
                   <th>Reason</th>
+                  <th>Paid/Unpaid</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -413,11 +434,68 @@ export default function AdminPanel() {
                     <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
                     <td>{req.reason}</td>
                     <td>
+                      {req.paidDays || 0}/{req.unpaidDays || 0}
+                      {req.salaryCut ? <span style={{ color: "#c53030", marginLeft: "6px" }}>(Cut)</span> : null}
+                    </td>
+                    <td>
                       <button className="btn btn-pay" onClick={() => handleLeaveAction(req._id, "Approved")}>Approve</button>
                       <button className="btn btn-delete" style={{marginLeft: '5px'}} onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {role?.toLowerCase() === "admin" && (
+        <div className="dashboard-section">
+          <div className="section-header">
+            <h2 className="section-title">
+              <span className="icon">ðŸ“ˆ</span>
+              Yearly Leave Summary (Paid/Unpaid)
+            </h2>
+          </div>
+          <div style={{ marginBottom: "12px", display: "flex", gap: "10px", alignItems: "center" }}>
+            <label htmlFor="leave-summary-year"><strong>Year:</strong></label>
+            <input
+              id="leave-summary-year"
+              type="number"
+              min="2000"
+              max="3000"
+              value={leaveSummaryYear}
+              onChange={(e) => setLeaveSummaryYear(Number(e.target.value) || new Date().getFullYear())}
+              style={{ width: "110px", padding: "6px 8px" }}
+            />
+          </div>
+          <div className="table-wrapper">
+            <table className="employee-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Approved Paid</th>
+                  <th>Approved Unpaid</th>
+                  <th>Pending Paid</th>
+                  <th>Pending Unpaid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaveSummary.length > 0 ? leaveSummary.map((row) => (
+                  <tr key={row.userId}>
+                    <td>{row.name}</td>
+                    <td><span className={`role-badge role-${row.role}`}>{row.role}</span></td>
+                    <td>{row.approvedPaidDays || 0}</td>
+                    <td>{row.approvedUnpaidDays || 0}</td>
+                    <td>{row.pendingPaidDays || 0}</td>
+                    <td>{row.pendingUnpaidDays || 0}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="6">No leave summary data found for this year.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -444,6 +522,7 @@ export default function AdminPanel() {
                   <th>Check-In Time</th>
                   <th>Check-Out Time</th>
                   <th>Duration</th>
+                  <th>Salary Cut</th>
                 </tr>
               </thead>
               <tbody>
@@ -453,9 +532,10 @@ export default function AdminPanel() {
                     <td><span className={`role-badge role-${log.userId?.role}`}>{log.userId?.role}</span></td>
                     <td>{log.userId?.department || "—"}</td>
                     <td>{log.date}</td>
-                    <td>{new Date(log.checkIn).toLocaleTimeString()}</td>
+                    <td>{(log.checkIn || log.timestamp) ? new Date(log.checkIn || log.timestamp).toLocaleTimeString() : "â€”"}</td>
                     <td>{log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : "—"}</td>
-                    <td>{calculateWorkHours(log.checkIn, log.checkOut)}</td>
+                    <td>{log.workedMinutes ? `${Math.floor(log.workedMinutes / 60)}h ${log.workedMinutes % 60}m` : calculateWorkHours(log.checkIn, log.checkOut)}</td>
+                    <td>{log.salaryCut ? `Yes (${log.shortByMinutes || 0} min short)` : "No"}</td>
                   </tr>
                 ))}
               </tbody>

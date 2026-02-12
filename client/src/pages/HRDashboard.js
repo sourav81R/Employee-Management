@@ -189,6 +189,7 @@ export default function HRDashboard() {
                       <th>Employee</th>
                       <th>Dates</th>
                       <th>Reason</th>
+                      <th>Paid/Unpaid</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -198,6 +199,10 @@ export default function HRDashboard() {
                         <td>{req.userId?.name} ({req.userId?.email})</td>
                         <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
                         <td>{req.reason}</td>
+                        <td>
+                          {req.paidDays || 0}/{req.unpaidDays || 0}
+                          {req.salaryCut ? <span style={{ color: "#c53030", marginLeft: "6px" }}>(Cut)</span> : null}
+                        </td>
                         <td>
                           <button className="btn btn-primary" onClick={() => handleLeaveAction(req._id, "Approved")}>Approve</button>
                           <button className="btn btn-secondary" style={{marginLeft: '5px'}} onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
