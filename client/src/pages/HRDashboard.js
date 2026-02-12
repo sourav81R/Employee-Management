@@ -229,7 +229,7 @@ export default function HRDashboard() {
             {managers.length > 0 ? (
               managers.map((manager) => (
                 <div key={manager._id} className="manager-card">
-                  <div className="manager-avatar">{manager.name.charAt(0)}</div>
+                  <div className="manager-avatar">{manager.name?.charAt(0) || "M"}</div>
                   <h3>{manager.name}</h3>
                   <p className="manager-email">{manager.email}</p>
                   <p className="manager-dept">{manager.department || "No department"}</p>
@@ -264,7 +264,7 @@ export default function HRDashboard() {
                 {users.map((u) => (
                   <tr key={u._id}>
                     <td className="user-name">
-                      <span className="user-avatar">{u.name.charAt(0)}</span>
+                      <span className="user-avatar">{u.name?.charAt(0) || "U"}</span>
                       {u.name}
                     </td>
                     <td>{u.email}</td>
