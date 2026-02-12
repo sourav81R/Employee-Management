@@ -11,6 +11,20 @@ function isSecureOrLocalhost() {
   return window.isSecureContext || LOCAL_HOSTS.has(window.location.hostname);
 }
 
+function getGeoErrorMessage(error) {
+  if (!error) return "Could not get location. Please try again.";
+  if (error.code === 1) return "Location permission denied. Enable location access in browser/site settings.";
+  if (error.code === 2) return "Location unavailable. Turn on GPS/mobile location and try again.";
+  if (error.code === 3) return "Location request timed out. Move to an open area and try Refresh Location.";
+  return "Could not get location. Please try again.";
+}
+
+function requestPosition(options) {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  });
+}
+
 export default function AttendanceCapture() {
   const { user } = useContext(AuthContext);
   const videoRef = useRef(null);
@@ -79,26 +93,40 @@ export default function AttendanceCapture() {
     setMessage("Getting your location...");
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const nextLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
+    try {
+      if (navigator.permissions?.query) {
+        const permission = await navigator.permissions.query({ name: "geolocation" });
+        if (permission.state === "denied") {
+          setError("Location permission is blocked. Enable it from browser settings, then refresh location.");
+          setMessage(null);
+          return;
+        }
+      }
 
-        setLocation(nextLocation);
-        const place = await resolveLocationName(nextLocation.latitude, nextLocation.longitude);
-        setLocationName(place);
-        setMessage(place ? "Location captured." : "Location captured (no place name found).");
-        setLocationLoading(false);
-      },
-      (_geoError) => {
-        setError("Could not get location. Allow location access, then try Refresh Location.");
-        setMessage(null);
-        setLocationLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-    );
+      let position;
+      try {
+        // Try accurate GPS first.
+        position = await requestPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      } catch (_firstErr) {
+        // Fallback for slow/noisy mobile GPS: allow cached + non-high-accuracy.
+        position = await requestPosition({ enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
+      }
+
+      const nextLocation = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+
+      setLocation(nextLocation);
+      const place = await resolveLocationName(nextLocation.latitude, nextLocation.longitude);
+      setLocationName(place);
+      setMessage(place ? "Location captured." : "Location captured (place name unavailable).");
+    } catch (geoError) {
+      setError(getGeoErrorMessage(geoError));
+      setMessage(null);
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   const startCamera = async () => {
@@ -233,13 +261,13 @@ export default function AttendanceCapture() {
       {error && <p className="error-message">{error}</p>}
       {message && !error && <p className="info-message">{message}</p>}
 
-      <div className="camera-feed-wrapper">
-        {!photoData && <video ref={videoRef} autoPlay playsInline muted className="camera-feed"></video>}
+      <div className="camera-feed-wrapper" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+        {!photoData && <video ref={videoRef} autoPlay playsInline muted className="camera-feed" style={{ maxWidth: "100%", borderRadius: "8px" }}></video>}
         <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
-        {photoData && <img src={photoData} alt="Captured Attendance" className="photo-preview" />}
+        {photoData && <img src={photoData} alt="Captured Attendance" className="photo-preview" style={{ maxWidth: "100%", borderRadius: "8px" }} />}
       </div>
 
-      <div className="controls">
+      <div className="controls" style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center", marginTop: "15px" }}>
         <button
           type="button"
           onClick={startCamera}

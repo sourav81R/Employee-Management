@@ -8,8 +8,8 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
   const isAdmin = role?.toLowerCase() === "admin";
 
   return (
-    <div className="table-wrapper">
-      <table className="employee-table">
+    <div className="table-wrapper" style={{ overflowX: "auto" }}>
+      <table className="employee-table" style={{ width: "100%", minWidth: "800px", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Employee ID</th>

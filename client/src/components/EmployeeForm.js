@@ -67,7 +67,7 @@ export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
   }
 
   return (
-    <form className="employee-form" onSubmit={handleSubmit}>
+    <form className="employee-form" onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "0 auto" }}>
       <input
         type="text"
         name="employeeId"
@@ -128,7 +128,7 @@ export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
         Salary Paid
       </label>
 
-      <div className="form-actions">
+      <div className="form-actions" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
         <button type="submit" className="submit-btn">
           {editing ? "Update Employee" : "Add Employee"}
         </button>

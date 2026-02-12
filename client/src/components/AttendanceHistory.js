@@ -128,7 +128,7 @@ export default function AttendanceHistory() {
     <div className="attendance-history-container">
       <h2>Attendance History</h2>
 
-      <div className="attendance-list">
+      <div className="attendance-list" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
         {attendanceRecords.map((record) => {
           // Handle both employeeId and userId fields for compatibility
           const empData = record.employeeId || record.userId;
@@ -138,7 +138,7 @@ export default function AttendanceHistory() {
               : "N/A";
 
           return (
-            <div key={record._id || record.id} className="attendance-card">
+            <div key={record._id || record.id} className="attendance-card" style={{ height: "100%" }}>
               <div className="attendance-details">
                 <p>
                   <strong>Employee:</strong> {employee}
@@ -164,6 +164,7 @@ export default function AttendanceHistory() {
                     src={record.photoUrl}
                     alt="Attendance"
                     className="attendance-photo"
+                    style={{ maxWidth: "100%", height: "auto", borderRadius: "4px" }}
                     onError={(e) => (e.target.style.display = "none")}
                   />
                 ) : (
@@ -190,6 +191,7 @@ export default function AttendanceHistory() {
           <div
             className="map-modal-content"
             onClick={(e) => e.stopPropagation()}
+            style={{ width: "95%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto" }}
           >
             <h3>
               Attendance Location for{" "}

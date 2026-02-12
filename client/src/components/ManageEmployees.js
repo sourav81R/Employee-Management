@@ -27,7 +27,8 @@ function ManageEmployees() {
   return (
     <div>
       <h2>Manage Employees</h2>
-      <table>
+      <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", minWidth: "600px", borderCollapse: "collapse" }}>
         <thead>
           <tr>
             <th>Name</th>
@@ -52,6 +53,7 @@ function ManageEmployees() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
