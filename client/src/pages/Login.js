@@ -9,6 +9,7 @@ import "./Login.css";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [circleImage, setCircleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=300&fit=crop");
@@ -142,12 +143,21 @@ export default function Login() {
                 <div className="input-wrapper">
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
+                    className="password-input"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
                 </div>
               </div>
 

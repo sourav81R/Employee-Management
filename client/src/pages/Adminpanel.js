@@ -121,13 +121,62 @@ export default function AdminPanel() {
     }
   }
 
-  const calculateWorkHours = (checkIn, checkOut) => {
-    if (!checkIn || !checkOut) return "—";
-    const diff = new Date(checkOut) - new Date(checkIn);
-    const totalMinutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
+  const DEFAULT_MIN_DAILY_WORK_HOURS = Math.max(
+    1,
+    Math.min(24, Number(process.env.REACT_APP_MIN_DAILY_WORK_HOURS) || 8)
+  );
+  const DEFAULT_MIN_DAILY_WORK_MINUTES = DEFAULT_MIN_DAILY_WORK_HOURS * 60;
+
+  const formatTime = (value) => {
+    if (!value) return "N/A";
+    const parsed = new Date(value);
+    if (!Number.isFinite(parsed.getTime())) return "N/A";
+    return parsed.toLocaleTimeString();
+  };
+
+  const formatMinutes = (minutes) => {
+    const total = Number(minutes);
+    if (!Number.isFinite(total) || total < 0) return "N/A";
+    const hours = Math.floor(total / 60);
+    const remainder = total % 60;
+    return `${hours}h ${remainder}m`;
+  };
+
+  const resolveAttendanceUser = (log) => log?.user || log?.userId || log?.employeeId || null;
+
+  const resolveMinimumMinutes = (log) => {
+    const minutesFromLog = Number(log?.minimumRequiredMinutes);
+    if (Number.isFinite(minutesFromLog) && minutesFromLog > 0) return minutesFromLog;
+
+    const hoursFromLog = Number(log?.minimumRequiredHours);
+    if (Number.isFinite(hoursFromLog) && hoursFromLog > 0) return Math.round(hoursFromLog * 60);
+
+    return DEFAULT_MIN_DAILY_WORK_MINUTES;
+  };
+
+  const getWorkedMinutes = (log) => {
+    const checkOut = log?.checkOut;
+    if (!checkOut) return null;
+
+    const storedWorked = Number(log?.workedMinutes);
+    if (Number.isFinite(storedWorked) && storedWorked >= 0) return storedWorked;
+
+    const checkIn = log?.checkIn || log?.timestamp;
+    if (!checkIn) return null;
+
+    const inTime = new Date(checkIn);
+    const outTime = new Date(checkOut);
+    if (!Number.isFinite(inTime.getTime()) || !Number.isFinite(outTime.getTime())) return null;
+
+    return Math.max(0, Math.floor((outTime.getTime() - inTime.getTime()) / (1000 * 60)));
+  };
+
+  const getShortByMinutes = (log) => {
+    if (!log?.checkOut) return null;
+    const worked = getWorkedMinutes(log);
+    if (!Number.isFinite(worked)) return null;
+
+    return Math.max(0, resolveMinimumMinutes(log) - worked);
   };
 
   async function handleLeaveAction(id, status) {
@@ -218,6 +267,37 @@ export default function AdminPanel() {
   const filteredEmployees = employees.filter((emp) =>
   (emp.name?.toLowerCase() || "").includes(search.toLowerCase())
 );
+
+  const salaryByEmail = employees.reduce((acc, emp) => {
+    const email = (emp?.email || "").toLowerCase().trim();
+    const salary = Number(emp?.salary);
+    if (email && Number.isFinite(salary) && salary > 0) {
+      acc[email] = salary;
+    }
+    return acc;
+  }, {});
+
+  const getEstimatedSalaryCut = (log) => {
+    const shortByMinutes = getShortByMinutes(log);
+    if (!Number.isFinite(shortByMinutes) || shortByMinutes <= 0) return null;
+
+    const userRef = resolveAttendanceUser(log);
+    const email = (userRef?.email || "").toLowerCase().trim();
+    const monthlySalary = Number(salaryByEmail[email]);
+    if (!email || !Number.isFinite(monthlySalary) || monthlySalary <= 0) return null;
+
+    const dailySalary = monthlySalary / 30;
+    const perMinuteSalary = dailySalary / resolveMinimumMinutes(log);
+    const cutAmount = perMinuteSalary * shortByMinutes;
+    return Number(cutAmount.toFixed(2));
+  };
+
+  const minimumRequiredHoursForTable = (() => {
+    const fromLog = attendanceLog
+      .map((log) => Number(log?.minimumRequiredHours))
+      .find((value) => Number.isFinite(value) && value > 0);
+    return fromLog || DEFAULT_MIN_DAILY_WORK_HOURS;
+  })();
 
   return (
     <div className="admin-dashboard">
@@ -521,25 +601,50 @@ export default function AdminPanel() {
                   <th>Check-In Time</th>
                   <th>Check-Out Time</th>
                   <th>Duration</th>
-                  <th>Salary Cut</th>
+                  <th>Salary Cut / Day</th>
                 </tr>
               </thead>
               <tbody>
-                {attendanceLog.map((log) => (
-                  <tr key={log._id}>
-                    <td>{log.userId?.name}</td>
-                    <td><span className={`role-badge role-${log.userId?.role}`}>{log.userId?.role}</span></td>
-                    <td>{log.userId?.department || "—"}</td>
-                    <td>{log.date}</td>
-                    <td>{(log.checkIn || log.timestamp) ? new Date(log.checkIn || log.timestamp).toLocaleTimeString() : "â€”"}</td>
-                    <td>{log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : "—"}</td>
-                    <td>{log.workedMinutes ? `${Math.floor(log.workedMinutes / 60)}h ${log.workedMinutes % 60}m` : calculateWorkHours(log.checkIn, log.checkOut)}</td>
-                    <td>{log.salaryCut ? `Yes (${log.shortByMinutes || 0} min short)` : "No"}</td>
+                {attendanceLog.length > 0 ? (
+                  attendanceLog.map((log) => {
+                    const userRef = resolveAttendanceUser(log);
+                    const roleText = userRef?.role || "N/A";
+                    const checkIn = log.checkIn || log.timestamp;
+                    const checkOut = log.checkOut || null;
+                    const workedMinutes = getWorkedMinutes(log);
+                    const shortByMinutes = getShortByMinutes(log);
+                    const estimatedCut = getEstimatedSalaryCut(log);
+                    const dateText = log.date || (checkIn ? new Date(checkIn).toLocaleDateString() : "N/A");
+                    const salaryCutText = !checkOut
+                      ? "Pending checkout"
+                      : shortByMinutes > 0
+                        ? "Yes (" + formatMinutes(shortByMinutes) + " short" + (estimatedCut !== null ? ", est. cut " + estimatedCut : "") + ")"
+                        : "No";
+
+                    return (
+                      <tr key={log._id}>
+                        <td>{userRef?.name || "N/A"}</td>
+                        <td><span className={"role-badge role-" + String(roleText).toLowerCase()}>{roleText}</span></td>
+                        <td>{userRef?.department || "N/A"}</td>
+                        <td>{dateText}</td>
+                        <td>{formatTime(checkIn)}</td>
+                        <td>{formatTime(checkOut)}</td>
+                        <td>{workedMinutes === null ? "Pending" : formatMinutes(workedMinutes)}</td>
+                        <td>{salaryCutText}</td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="8">No attendance records found.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
+          <p style={{ marginTop: "10px", color: "#475569", fontWeight: 600 }}>
+            Minimum required work per day: {minimumRequiredHoursForTable} hour(s)
+          </p>
         </div>
       )}
 

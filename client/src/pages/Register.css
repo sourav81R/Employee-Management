@@ -182,13 +182,23 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
-.register-form .form-group label {
+.register-form .form-group > label {
   color: #374151;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.5px;
+  display: block;
+}
+
+.register-form .form-group label::before {
+  content: none;
 }
 
 .register-form .input-wrapper,
@@ -198,8 +208,8 @@
   align-items: center;
 }
 
-.register-form .input-wrapper i,
-.register-form .select-wrapper i {
+.register-form .input-wrapper > i,
+.register-form .select-wrapper > i {
   position: absolute;
   left: 16px;
   color: #9ca3af;
@@ -229,13 +239,44 @@
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
-.register-form .input-wrapper input:focus ~ i,
-.register-form .select-wrapper select:focus ~ i {
+.register-form .input-wrapper:focus-within > i,
+.register-form .select-wrapper:focus-within > i {
   color: #667eea;
 }
 
 .register-form .input-wrapper input::placeholder {
   color: #9ca3af;
+}
+
+.register-form .password-input {
+  padding-right: 44px;
+}
+
+.register-form .password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.register-form .password-toggle:hover {
+  color: #667eea;
+}
+
+.register-form .password-input:focus ~ .password-toggle {
+  color: #667eea;
+}
+
+.register-form .password-toggle:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .register-form select {
@@ -411,6 +452,10 @@
     font-size: 0.9rem;
   }
 
+  .register-form .password-input {
+    padding-right: 42px;
+  }
+
   .register-btn {
     padding: 12px 20px;
     font-size: 0.95rem;
@@ -431,7 +476,7 @@
     font-size: 1.4rem;
   }
 
-  .register-form .form-group label {
+  .register-form .form-group > label {
     font-size: 0.9rem;
   }
 
@@ -441,10 +486,14 @@
     font-size: 0.85rem;
   }
 
-  .register-form .input-wrapper i,
-  .register-form .select-wrapper i {
+  .register-form .input-wrapper > i,
+  .register-form .select-wrapper > i {
     left: 12px;
     font-size: 0.95rem;
+  }
+
+  .register-form .password-input {
+    padding-right: 40px;
   }
 
   .register-btn {

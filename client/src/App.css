@@ -1,6 +1,14 @@
 /* ================================
    Global Layout & Styles
 ================================ */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
@@ -19,6 +27,7 @@ body {
 
 /* Smooth transitions everywhere */
 * {
+  box-sizing: border-box;
   transition: all 0.25s ease;
 }
 

@@ -184,13 +184,26 @@
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Prevent global dashboard .form-group styles from adding extra spacing/icons on login */
+.login-form .form-group {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.login-form .form-group label::before {
+  content: none;
 }
 
 .form-group label {
@@ -206,7 +219,7 @@
   align-items: center;
 }
 
-.input-wrapper i {
+.input-wrapper > i {
   position: absolute;
   left: 16px;
   color: #9ca3af;
@@ -243,6 +256,37 @@
   color: #9ca3af;
 }
 
+.input-wrapper .password-input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.password-toggle:hover {
+  color: #667eea;
+}
+
+.input-wrapper .password-input:focus ~ .password-toggle {
+  color: #667eea;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ================================
    Login Button
 ================================ */
@@ -260,7 +304,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 0;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
   letter-spacing: 0.5px;
 }
@@ -410,8 +454,12 @@
   }
 
   .input-wrapper input {
-    padding: 12px 14px 12px 44px;
+    padding: 12px 14px;
     font-size: 0.9rem;
+  }
+
+  .input-wrapper .password-input {
+    padding-right: 42px;
   }
 
   .login-btn {
@@ -439,13 +487,17 @@
   }
 
   .input-wrapper input {
-    padding: 11px 12px 11px 40px;
+    padding: 11px 12px;
     font-size: 0.85rem;
   }
 
-  .input-wrapper i {
+  .input-wrapper > i {
     left: 12px;
     font-size: 0.95rem;
+  }
+
+  .input-wrapper .password-input {
+    padding-right: 40px;
   }
 
   .login-btn {

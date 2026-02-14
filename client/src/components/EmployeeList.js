@@ -41,16 +41,20 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
                   : "Not Paid Yet"}
               </td>
               {isAdmin && (
-                <td>
-                  <button onClick={() => onEdit(emp)} className="btn btn-edit">
-                    Edit
-                  </button>
-                  <button onClick={() => onDelete(emp._id)} className="btn btn-delete">
-                    Delete
-                  </button>
-                  <button onClick={() => onPay(emp._id)} className="btn btn-pay">
-                    Pay Salary
-                  </button>
+                <td className="action-cell">
+                  <div className="action-buttons">
+                    <div className="action-btn-group">
+                      <button onClick={() => onEdit(emp)} className="btn btn-edit action-btn">
+                        Edit
+                      </button>
+                      <button onClick={() => onDelete(emp._id)} className="btn btn-delete action-btn">
+                        Delete
+                      </button>
+                    </div>
+                    <button onClick={() => onPay(emp._id)} className="btn btn-pay action-btn action-btn-pay">
+                      Pay Salary
+                    </button>
+                  </div>
                 </td>
               )}
             </tr>

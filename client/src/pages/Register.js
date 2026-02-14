@@ -8,6 +8,7 @@ export default function Register() {
   const [name, setName] = useState("");   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("employee");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -190,12 +191,21 @@ export default function Register() {
                   <i className="fa-solid fa-lock"></i>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
+                    className="password-input"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
                 </div>
               </div>
 

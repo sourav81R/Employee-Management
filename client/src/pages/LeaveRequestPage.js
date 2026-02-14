@@ -12,6 +12,7 @@ const LeaveRequestPage = () => {
     const [myRequests, setMyRequests] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [statusFilter, setStatusFilter] = useState('All');
+    const [isClearingLeaveStatus, setIsClearingLeaveStatus] = useState(false);
 
     const token = (contextToken && contextToken !== 'undefined' && contextToken !== 'null')
         ? contextToken
@@ -61,6 +62,44 @@ const LeaveRequestPage = () => {
         } catch (err) {
             console.error('Error deleting request:', err);
             setMessage('Delete failed. Please check if the server is running.');
+        }
+    };
+
+    const handleClearAllLeaveStatus = async () => {
+        if (!token || token === 'undefined' || token === 'null' || token === '') {
+            setMessage('You must be logged in to clear leave status.');
+            return;
+        }
+        if (!myRequests.length || isClearingLeaveStatus) return;
+        if (!window.confirm('Are you sure you want to clear all leave status records? This action cannot be undone.')) return;
+
+        setIsClearingLeaveStatus(true);
+        try {
+            let res = await fetch(buildApiUrl('/api/leave/my-requests'), {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!res.ok && res.status !== 401 && res.status !== 403) {
+                res = await fetch(buildApiUrl('/api/leave/my-requests/clear'), {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                setMyRequests([]);
+                setStatusFilter('All');
+                setMessage(data.message || 'All leave status records cleared successfully.');
+            } else {
+                setMessage(data.message || 'Failed to clear leave status.');
+            }
+        } catch (err) {
+            console.error('Error clearing leave status:', err);
+            setMessage('Failed to clear leave status. Please check if the server is running.');
+        } finally {
+            setIsClearingLeaveStatus(false);
         }
     };
 
@@ -181,7 +220,17 @@ const LeaveRequestPage = () => {
             </div>
 
             <div className="leave-card" style={{ width: '100%', maxWidth: '600px' }}>
-                <h2>My Leave Status</h2>
+                <div className="leave-status-header">
+                    <h2>My Leave Status</h2>
+                    <button
+                        type="button"
+                        className="btn-clear-leave-status"
+                        onClick={handleClearAllLeaveStatus}
+                        disabled={isClearingLeaveStatus || myRequests.length === 0}
+                    >
+                        {isClearingLeaveStatus ? 'Clearing...' : 'Clear All'}
+                    </button>
+                </div>
                 <div style={{ marginBottom: '12px' }}>
                     <label style={{ marginRight: '8px', fontWeight: '600' }}>Filter:</label>
                     <select

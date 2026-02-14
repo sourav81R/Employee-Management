@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useMemo, useState, useContext, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "../styles/navbar.css";
 
@@ -8,6 +8,7 @@ function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -20,6 +21,21 @@ function Navbar() {
     setMobileMenuOpen(false);
     setShowUserMenu(false);
   };
+
+  useEffect(() => {
+    closeMenus();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 900) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const roleLower = (user?.role || "").trim().toLowerCase();
 
@@ -89,10 +105,17 @@ function Navbar() {
         {user && (
           <button
             type="button"
-            className="mobile-nav-toggle"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className={`mobile-nav-toggle ${mobileMenuOpen ? "is-active" : ""}`}
+            onClick={() => {
+              setMobileMenuOpen((prev) => {
+                const next = !prev;
+                if (!next) setShowUserMenu(false);
+                return next;
+              });
+            }}
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
+            aria-controls="app-navbar-links"
           >
             <span></span>
             <span></span>
@@ -100,7 +123,10 @@ function Navbar() {
           </button>
         )}
 
-        <div className={`navbar-links ${mobileMenuOpen ? "is-open" : ""}`}>
+        <div
+          id="app-navbar-links"
+          className={`navbar-links ${mobileMenuOpen ? "is-open" : ""}`}
+        >
           {user && (
             <>
               <div className="navbar-link-group" onClick={closeMenus}>{commonLinks}</div>
@@ -111,6 +137,7 @@ function Navbar() {
           {user && (
             <div className="user-menu">
               <button
+                type="button"
                 className="user-button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >

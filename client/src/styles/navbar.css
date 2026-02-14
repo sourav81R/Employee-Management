@@ -14,12 +14,16 @@
 
 .navbar.app-navbar {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 1000;
+  width: min(1400px, calc(100% - 24px));
+  margin: 12px auto 0;
+  border-radius: 20px;
   background: linear-gradient(120deg, var(--nav-bg-top), var(--nav-bg-bottom));
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.35);
-  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.35);
+  overflow-x: clip;
+  overflow-y: visible;
   font-family: "Manrope", "Segoe UI", sans-serif;
 }
 
@@ -37,6 +41,7 @@
 .navbar .navbar-container {
   position: relative;
   width: 100%;
+  max-width: 100%;
   padding: 12px;
   display: flex;
   align-items: center;
@@ -66,12 +71,16 @@
   display: flex;
   flex-direction: column;
   line-height: 1.15;
+  min-width: 0;
 }
 
 .navbar .brand-title {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar .brand-subtitle {
@@ -94,6 +103,8 @@
   justify-content: center;
   flex-direction: column;
   gap: 5px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .mobile-nav-toggle span {
@@ -101,6 +112,19 @@
   height: 2px;
   background: #e2e8f0;
   display: block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-nav-toggle.is-active span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mobile-nav-toggle.is-active span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-nav-toggle.is-active span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 .navbar .navbar-links {
@@ -110,6 +134,7 @@
   flex-wrap: wrap;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 
 .navbar .navbar-link-group {
@@ -185,12 +210,14 @@
   flex-direction: column;
   align-items: flex-start;
   line-height: 1.1;
+  min-width: 0;
+  flex: 1;
 }
 
 .navbar .user-name {
   font-size: 0.86rem;
   font-weight: 700;
-  max-width: 170px;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -280,19 +307,38 @@
   background: #fef2f2;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) and (min-width: 901px) {
   .navbar .navbar-container {
-    align-items: flex-start;
-    flex-direction: column;
+    padding: 10px 12px;
+    gap: 12px;
   }
 
-  .navbar .navbar-links {
-    width: 100%;
-    justify-content: flex-start;
+  .navbar .brand-title {
+    font-size: 1.18rem;
+  }
+
+  .navbar .brand-subtitle {
+    font-size: 0.66rem;
+  }
+
+  .navbar .nav-link {
+    font-size: 0.85rem;
+    padding: 8px 11px;
+  }
+
+  .navbar .user-button {
+    padding: 5px 8px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .navbar.app-navbar {
+    top: 8px;
+    width: calc(100% - 16px);
+    margin-top: 8px;
+    border-radius: 16px;
+  }
+
   .navbar .navbar-container {
     align-items: center;
     flex-direction: row;
@@ -311,10 +357,16 @@
   .navbar .navbar-links {
     display: none;
     width: 100%;
+    flex: 0 0 100%;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
-    padding-top: 8px;
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.64);
+    backdrop-filter: blur(8px);
   }
 
   .navbar .navbar-links.is-open {
@@ -328,9 +380,11 @@
   }
 
   .navbar .nav-link {
-    text-align: center;
+    text-align: left;
     width: 100%;
     box-sizing: border-box;
+    border-radius: 12px;
+    padding: 11px 12px;
   }
 
   .navbar .user-menu {
@@ -343,22 +397,56 @@
   }
 
   .navbar .user-dropdown {
-    left: 0;
-    right: 0;
+    position: static;
+    margin-top: 8px;
     min-width: 0;
+    width: 100%;
   }
 }
 
 @media (max-width: 620px) {
+  .navbar.app-navbar {
+    width: calc(100% - 10px);
+    border-radius: 14px;
+    top: 6px;
+    margin-top: 6px;
+  }
+
+  .navbar .navbar-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .navbar .brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
   .navbar .brand-title {
-    font-size: 1.15rem;
+    font-size: 1.02rem;
   }
 
   .navbar .brand-subtitle {
     display: none;
   }
 
-  .navbar .user-name {
-    max-width: 130px;
+  .navbar .navbar-brand {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .mobile-nav-toggle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .navbar .nav-link {
+    padding: 10px 12px;
+    font-size: 0.88rem;
+  }
+
+  .navbar .user-button {
+    padding: 6px 8px;
   }
 }

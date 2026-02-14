@@ -66,6 +66,30 @@
     color: #555;
 }
 
+.today-attendance-panel {
+    text-align: left;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+}
+
+.today-attendance-panel p {
+    margin: 6px 0;
+    color: #334155;
+}
+
+.checkout-controls {
+    margin-top: 12px;
+}
+
+.attendance-day-complete {
+    color: #166534;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
 /* Basic button styles (assuming you have global styles, otherwise add them) */
 .btn {
     padding: 10px 20px;
@@ -138,6 +162,15 @@
 
 .btn-danger:hover:not(:disabled) {
     background-color: #dc2626;
+}
+
+.btn-warning {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background-color: #d97706;
 }
 
 .btn-link {

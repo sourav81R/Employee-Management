@@ -403,6 +403,11 @@ app.get("/api/manager/team", verifyToken, requireRole("manager", "admin", "hr"),
 /* -----------------------
    Attendance & Leave APIs
    ----------------------- */
+const MIN_DAILY_WORK_HOURS = Math.max(
+  1,
+  Math.min(24, Number(process.env.MIN_DAILY_WORK_HOURS) || 8)
+);
+const MIN_DAILY_WORK_MINUTES = MIN_DAILY_WORK_HOURS * 60;
 
 // ✅ NEW: Mark Attendance with Photo & Location
 app.post("/api/attendance", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
@@ -451,6 +456,26 @@ app.get("/api/attendance/my", verifyToken, async (req, res) => {
 });
 
 // ✅ NEW: Get All Attendance (Admin/HR)
+// Clear my attendance records
+const clearMyAttendanceHistory = async (req, res) => {
+  try {
+    console.log(`[API] Clearing attendance history for user: ${req.user.id}`);
+    const result = await Attendance.deleteMany({
+      $or: [{ employeeId: req.user.id }, { userId: req.user.id }],
+    });
+    return res.json({
+      message: "Your attendance history was cleared successfully",
+      deletedCount: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("Clear my attendance error:", err);
+    return res.status(500).json({ message: "Failed to clear your attendance history" });
+  }
+};
+app.delete("/api/attendance/my", verifyToken, clearMyAttendanceHistory);
+app.post("/api/attendance/my/clear", verifyToken, clearMyAttendanceHistory);
+
+// Get all attendance records (Admin/HR)
 app.get("/api/attendance/all", verifyToken, requireRole("admin", "hr"), async (req, res) => {
   try {
     console.log(`[API] Fetching ALL attendance records for admin/hr: ${req.user.id}`);
@@ -465,21 +490,49 @@ app.get("/api/attendance/all", verifyToken, requireRole("admin", "hr"), async (r
   }
 });
 
+// Clear all attendance records (Admin/HR)
+const clearAllAttendanceHistory = async (req, res) => {
+  try {
+    console.log(`[API] Clearing ALL attendance records by user: ${req.user.id}`);
+    const result = await Attendance.deleteMany({});
+    return res.json({
+      message: "Attendance history cleared successfully",
+      deletedCount: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("Clear all attendance error:", err);
+    return res.status(500).json({ message: "Failed to clear attendance history" });
+  }
+};
+app.delete("/api/attendance/all", verifyToken, requireRole("admin", "hr"), clearAllAttendanceHistory);
+app.post("/api/attendance/all/clear", verifyToken, requireRole("admin", "hr"), clearAllAttendanceHistory);
+
 // Mark daily attendance
 app.post("/api/attendance/check-in", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
   try {
     console.log(`[API] Attendance check-in request for user: ${req.user.id}`);
     // Use the date provided by the frontend, or fallback to server local date
-    const today = req.body.date || new Date().toISOString().split('T')[0]; 
+    const today = req.body?.date || new Date().toISOString().split('T')[0];
+    const { photo, latitude, longitude, locationName, deviceType } = req.body || {};
     const existing = await Attendance.findOne({ userId: req.user.id, date: today });
     if (existing) return res.status(400).json({ message: "Already checked in today" });
 
     const now = new Date();
+    const numericLat = Number(latitude);
+    const numericLng = Number(longitude);
+    const hasCoordinates = Number.isFinite(numericLat) && Number.isFinite(numericLng);
+
     const record = await Attendance.create({
+      employeeId: req.user.id,
       userId: req.user.id,
       date: today,
       checkIn: now,
       timestamp: now,
+      photoUrl: typeof photo === "string" && photo ? photo : undefined,
+      latitude: hasCoordinates ? numericLat : undefined,
+      longitude: hasCoordinates ? numericLng : undefined,
+      locationName: typeof locationName === "string" ? locationName.trim() : "",
+      deviceType: typeof deviceType === "string" && deviceType.trim() ? deviceType : "unknown",
       workedMinutes: 0,
       salaryCut: false,
       shortByMinutes: 0,
@@ -496,7 +549,7 @@ app.post("/api/attendance/check-out", verifyToken, requireRole("admin", "hr", "m
   try {
     console.log(`[API] Attendance check-out request for user: ${req.user.id}`);
     // Use the date provided by the frontend, or fallback to server local date
-    const today = req.body.date || new Date().toISOString().split('T')[0]; 
+    const today = req.body?.date || new Date().toISOString().split('T')[0];
     const record = await Attendance.findOne({ userId: req.user.id, date: today });
 
     if (!record) {
@@ -514,18 +567,21 @@ app.post("/api/attendance/check-out", verifyToken, requireRole("admin", "hr", "m
     }
 
     const workedMinutes = Math.max(0, Math.floor((now.getTime() - new Date(checkInTime).getTime()) / (1000 * 60)));
-    const minimumMinutes = 8 * 60;
-    const applySalaryCut = req.user.role === "employee" && workedMinutes < minimumMinutes;
+    const minimumMinutes = MIN_DAILY_WORK_MINUTES;
+    const shortByMinutes = Math.max(0, minimumMinutes - workedMinutes);
+    const applySalaryCut = shortByMinutes > 0;
 
     record.checkOut = now;
     record.workedMinutes = workedMinutes;
-    record.shortByMinutes = applySalaryCut ? (minimumMinutes - workedMinutes) : 0;
+    record.shortByMinutes = shortByMinutes;
     record.salaryCut = applySalaryCut;
     await record.save();
     return res.json({
       ...record.toObject(),
+      minimumRequiredHours: MIN_DAILY_WORK_HOURS,
+      minimumRequiredMinutes: MIN_DAILY_WORK_MINUTES,
       workHoursMessage: applySalaryCut
-        ? `Worked ${workedMinutes} minute(s). Less than 8 hours, salary cut applies for this day.`
+        ? `Worked ${workedMinutes} minute(s). Less than ${MIN_DAILY_WORK_HOURS} hour(s), salary cut applies for this day.`
         : `Worked ${workedMinutes} minute(s). Minimum daily hours completed.`,
     });
   } catch (err) {
@@ -828,6 +884,22 @@ app.delete("/api/leave/request/:id", verifyToken, async (req, res) => {
   }
 });
 
+// Clear all leave requests for current user
+const clearMyLeaveRequests = async (req, res) => {
+  try {
+    const result = await LeaveRequest.deleteMany({ userId: req.user.id });
+    return res.json({
+      message: "All leave requests cleared successfully",
+      deletedCount: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("Clear leave requests error:", err);
+    return res.status(500).json({ message: "Failed to clear leave requests" });
+  }
+};
+app.delete("/api/leave/my-requests", verifyToken, clearMyLeaveRequests);
+app.post("/api/leave/my-requests/clear", verifyToken, clearMyLeaveRequests);
+
 // Get pending leave requests (HR/Admin)
 app.get("/api/leave/pending", verifyToken, requireRole("hr", "admin"), async (req, res) => {
   try {
@@ -953,9 +1025,38 @@ app.get("/api/reports/leave-summary", verifyToken, requireRole("admin", "hr"), a
 app.get("/api/admin/attendance", verifyToken, requireRole("admin"), async (req, res) => {
   try {
     const records = await Attendance.find()
+      .populate("employeeId", "name email role department")
       .populate("userId", "name email role department")
-      .sort({ createdAt: -1 });
-    return res.json(records);
+      .sort({ checkIn: -1, timestamp: -1, createdAt: -1 });
+
+    const normalized = records.map((entry) => {
+      const log = typeof entry.toObject === "function" ? entry.toObject() : { ...entry };
+      const user = log.userId || log.employeeId || null;
+      const checkIn = log.checkIn || log.timestamp || null;
+      const checkOut = log.checkOut || null;
+      const parsedWorkedMinutes = Number(log.workedMinutes);
+      const hasWorkedMinutes = Number.isFinite(parsedWorkedMinutes) && parsedWorkedMinutes >= 0;
+      const workedMinutes = hasWorkedMinutes
+        ? parsedWorkedMinutes
+        : (checkIn && checkOut)
+          ? Math.max(0, Math.floor((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60)))
+          : 0;
+      const shortByMinutes = checkOut ? Math.max(0, MIN_DAILY_WORK_MINUTES - workedMinutes) : 0;
+
+      return {
+        ...log,
+        user,
+        checkIn,
+        checkOut,
+        workedMinutes,
+        shortByMinutes,
+        salaryCut: checkOut ? shortByMinutes > 0 : false,
+        minimumRequiredHours: MIN_DAILY_WORK_HOURS,
+        minimumRequiredMinutes: MIN_DAILY_WORK_MINUTES,
+      };
+    });
+
+    return res.json(normalized);
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch all attendance" });
   }
