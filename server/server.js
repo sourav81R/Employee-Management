@@ -16,6 +16,25 @@ import LeaveRequest from "./LeaveRequest.js";
 
 const app = express();
 
+const parseTrustProxy = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+  const asNumber = Number(normalized);
+  if (Number.isInteger(asNumber) && asNumber >= 0) return asNumber;
+  return value;
+};
+
+// Proxy-aware IP handling for rate limiting and auth logs.
+const trustProxyFromEnv = parseTrustProxy(process.env.TRUST_PROXY);
+if (trustProxyFromEnv !== null) {
+  app.set("trust proxy", trustProxyFromEnv);
+} else {
+  // Sensible default for common deployments (Render/Vercel/NGINX) and local reverse-proxy dev.
+  app.set("trust proxy", 1);
+}
+
 /* -----------------------
    Basic middleware
    ----------------------- */
@@ -77,6 +96,8 @@ app.use(
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
+    // Prevent startup/runtime validation noise when proxies inject X-Forwarded-For.
+    validate: { xForwardedForHeader: false },
   })
 );
 
@@ -257,7 +278,6 @@ const requireRole = (...allowedRoles) => {
   };
 };
 
-const PRIVILEGED_ROLES = new Set(["admin", "hr", "manager"]);
 const APPROVAL_STATUSES = new Set(["Approved", "Rejected"]);
 
 /* -----------------------
@@ -270,7 +290,7 @@ app.post("/api/auth/register", async (req, res) => {
     const { name, email, password, role } = req.body;
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedName = String(name || "").trim();
-    const requestedRole = String(role || "employee").trim().toLowerCase();
+    const requestedRole = normalizeRole(role, "employee");
 
     if (!normalizedName || !normalizedEmail || !password) {
       return res.status(400).json({ message: "Name, email & password required" });
@@ -283,18 +303,12 @@ app.post("/api/auth/register", async (req, res) => {
     const exists = await User.findOne({ email: normalizedEmail });
     if (exists) return res.status(400).json({ message: "User already exists" });
 
-    // Security hardening: public signup is employee-only except the very first bootstrap admin.
-    const userCount = await User.countDocuments();
-    const userRole = userCount === 0 && requestedRole === "admin"
-      ? "admin"
-      : "employee";
-
     const hashed = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       name: normalizedName,
       email: normalizedEmail,
       password: hashed,
-      role: userRole,
+      role: requestedRole,
       isActive: true,
       employmentStatus: "active",
     });
@@ -309,9 +323,6 @@ app.post("/api/auth/register", async (req, res) => {
         role: newUser.role,
         isActive: newUser.isActive,
       },
-      roleNotice: PRIVILEGED_ROLES.has(requestedRole) && userRole !== requestedRole
-        ? "Privileged roles are assigned by authorized administrators."
-        : undefined,
     });
   } catch (err) {
     console.error("register err:", err && err.message ? err.message : err);

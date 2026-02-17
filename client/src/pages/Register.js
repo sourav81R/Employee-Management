@@ -78,7 +78,7 @@ export default function Register() {
         name,
         email,
         password,
-        role: "employee",
+        role,
       });
 
       alert("✅ Registration successful, now login!");
@@ -212,7 +212,7 @@ export default function Register() {
               <div className="form-group">
                 <label htmlFor="role">Select Role</label>
                 <div className="role-info">
-                  <p className="role-hint">Public signup creates Employee accounts. HR/Admin roles are assigned internally.</p>
+                  <p className="role-hint">Choose the role for this account.</p>
                 </div>
                 <div className="role-options">
                   <label className="role-option">
@@ -235,7 +235,6 @@ export default function Register() {
                       name="role"
                       value="manager"
                       checked={role === "manager"}
-                      disabled
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
@@ -250,7 +249,6 @@ export default function Register() {
                       name="role"
                       value="hr"
                       checked={role === "hr"}
-                      disabled
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
@@ -265,7 +263,6 @@ export default function Register() {
                       name="role"
                       value="admin"
                       checked={role === "admin"}
-                      disabled
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
