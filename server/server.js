@@ -164,6 +164,52 @@ const employeeSchema = new mongoose.Schema(
 );
 const Employee = mongoose.model("Employee", employeeSchema);
 
+const VALID_ROLES = new Set(["admin", "hr", "manager", "employee"]);
+const escapeRegex = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const normalizeRole = (value, fallback = "") => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (VALID_ROLES.has(normalized)) return normalized;
+  return fallback;
+};
+
+const resolveEffectiveRole = async (userDoc) => {
+  const rawRole = String(userDoc?.role || "");
+  const normalizedRole = normalizeRole(rawRole, "employee");
+  if (!userDoc?._id) return normalizedRole;
+
+  // Normalize persisted role text (case/spacing/invalid values) for consistency.
+  if (rawRole.trim().toLowerCase() !== normalizedRole) {
+    await User.updateOne({ _id: userDoc._id }, { $set: { role: normalizedRole } });
+  }
+
+  if (normalizedRole === "admin" || normalizedRole === "hr" || normalizedRole === "manager") {
+    return normalizedRole;
+  }
+
+  // Data-healing for production: if user has direct reports, they should act as manager.
+  const normalizedName = String(userDoc?.name || "").trim();
+  const employeeReportsQuery = normalizedName
+    ? {
+      $or: [
+        { managerId: userDoc._id },
+        { reportingTo: { $regex: new RegExp(`^${escapeRegex(normalizedName)}$`, "i") } },
+      ],
+    }
+    : { managerId: userDoc._id };
+
+  const [hasUserReports, hasEmployeeReports] = await Promise.all([
+    User.exists({ managerId: userDoc._id, isActive: { $ne: false } }),
+    Employee.exists(employeeReportsQuery),
+  ]);
+
+  if (hasUserReports || hasEmployeeReports) {
+    await User.updateOne({ _id: userDoc._id }, { $set: { role: "manager" } });
+    return "manager";
+  }
+
+  return normalizedRole;
+};
+
 /* -----------------------
    Middleware - Verify Token & Role
    ----------------------- */
@@ -175,7 +221,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const dbUser = await User.findById(decoded.id).select("_id email role isActive employmentStatus");
+    const dbUser = await User.findById(decoded.id).select("_id name email role isActive employmentStatus");
     if (!dbUser) {
       return res.status(401).json({ message: "User no longer exists" });
     }
@@ -183,10 +229,12 @@ const verifyToken = async (req, res, next) => {
       return res.status(403).json({ message: "Account is inactive. Contact HR/Admin." });
     }
 
+    const effectiveRole = await resolveEffectiveRole(dbUser);
+
     req.user = {
       id: String(dbUser._id),
       email: dbUser.email,
-      role: dbUser.role,
+      role: effectiveRole,
     };
     next();
   } catch (err) {
@@ -196,8 +244,13 @@ const verifyToken = async (req, res, next) => {
 };
 
 const requireRole = (...allowedRoles) => {
+  const normalizedAllowedRoles = allowedRoles
+    .map((role) => normalizeRole(role))
+    .filter(Boolean);
+
   return (req, res, next) => {
-    if (!allowedRoles.includes(req.user.role)) {
+    const requestRole = normalizeRole(req.user?.role);
+    if (!requestRole || !normalizedAllowedRoles.includes(requestRole)) {
       return res.status(403).json({ message: "Access denied - insufficient permissions" });
     }
     next();
@@ -285,7 +338,8 @@ app.post("/api/auth/login", async (req, res) => {
     user.lastLoginAt = new Date();
     await user.save();
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || "7d" });
+    const effectiveRole = await resolveEffectiveRole(user);
+    const token = jwt.sign({ id: user._id, email: user.email, role: effectiveRole }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || "7d" });
 
     return res.json({
       message: "Logged in",
@@ -295,7 +349,7 @@ app.post("/api/auth/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: effectiveRole,
         isActive: user.isActive,
       },
     });
@@ -392,8 +446,8 @@ app.get("/api/users", verifyToken, requireRole("admin", "hr"), async (req, res) 
 app.get("/api/managers", verifyToken, requireRole("admin", "hr", "manager"), async (req, res) => {
   try {
     const query = req.user.role === "manager"
-      ? { _id: req.user.id, role: "manager" }
-      : { role: "manager" };
+      ? { _id: req.user.id, role: { $regex: /^manager$/i } }
+      : { role: { $regex: /^manager$/i } };
     const managers = await User.find(query).select("-password").populate("managerId", "name email");
     return res.json(managers);
   } catch (err) {
@@ -425,11 +479,11 @@ app.post("/api/assign-manager", verifyToken, requireRole("admin", "hr"), async (
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.role === "admin") return res.status(400).json({ message: "Manager cannot be assigned to admin users" });
+    if (normalizeRole(user.role) === "admin") return res.status(400).json({ message: "Manager cannot be assigned to admin users" });
 
     const manager = await User.findById(managerId);
     if (!manager) return res.status(404).json({ message: "Manager user not found" });
-    if (manager.role !== "manager") return res.status(400).json({ message: "Selected assignee is not a manager" });
+    if (normalizeRole(manager.role) !== "manager") return res.status(400).json({ message: "Selected assignee is not a manager" });
     if (String(user._id) === String(manager._id)) return res.status(400).json({ message: "A user cannot report to themselves" });
 
     user.managerId = manager._id;
@@ -537,6 +591,7 @@ app.get("/api/auth/profile", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password").populate("managerId", "name email");
     if (!user) return res.status(404).json({ message: "User not found" });
+    user.role = await resolveEffectiveRole(user);
     return res.json(user);
   } catch (err) {
     console.error("profile err:", err && err.message ? err.message : err);
@@ -548,7 +603,7 @@ app.get("/api/auth/profile", verifyToken, async (req, res) => {
 app.get("/api/hr/stats", verifyToken, requireRole("admin", "hr"), async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    const managers = await User.countDocuments({ role: "manager" });
+    const managers = await User.countDocuments({ role: { $regex: /^manager$/i } });
     const employees = await Employee.countDocuments();
     const departments = await Employee.distinct("department");
 
