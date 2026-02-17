@@ -61,8 +61,9 @@ export default function HRDashboard() {
       });
       const leaveData = await leaveRes.json();
       if (Array.isArray(leaveData)) {
-        // Filter out HR requests so HR doesn't approve themselves or other HRs
-        setLeaveRequests(leaveData.filter(req => req.userId?.role !== 'hr'));
+        const isHrUser = user?.role?.toLowerCase?.() === "hr";
+        // HR should not act on HR leave requests; admin can.
+        setLeaveRequests(isHrUser ? leaveData.filter((req) => req.userId?.role !== "hr") : leaveData);
       }
     } catch (err) {
       console.error("Load data error:", err);
@@ -115,6 +116,32 @@ export default function HRDashboard() {
       }
     } catch (err) {
       console.error("Leave action error:", err);
+    }
+  }
+
+  async function handleToggleUserStatus(targetUser) {
+    try {
+      const nextIsActive = !(targetUser?.isActive !== false);
+      const res = await fetch(buildApiUrl(`/api/users/${targetUser._id}/status`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isActive: nextIsActive }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Failed to update user status");
+        return;
+      }
+
+      setUsers((prev) => prev.map((u) => (u._id === targetUser._id ? data.user : u)));
+      alert(data.message || "User status updated");
+    } catch (err) {
+      console.error("Toggle user status error:", err);
+      alert("Failed to update user status");
     }
   }
 
@@ -258,6 +285,8 @@ export default function HRDashboard() {
                   <th>Role</th>
                   <th>Manager</th>
                   <th>Department</th>
+                  <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,6 +302,23 @@ export default function HRDashboard() {
                     </td>
                     <td>{u.managerId?.name || "—"}</td>
                     <td>{u.department || "—"}</td>
+                    <td>
+                      <span className={`status-badge ${u.isActive === false ? "status-inactive" : "status-active"}`}>
+                        {u.isActive === false ? "Inactive" : "Active"}
+                      </span>
+                    </td>
+                    <td>
+                      {(user?.role === "admin" || u.role !== "admin") ? (
+                        <button
+                          className={`btn status-action-btn ${u.isActive === false ? "btn-primary" : "btn-secondary"}`}
+                          onClick={() => handleToggleUserStatus(u)}
+                        >
+                          {u.isActive === false ? "Activate" : "Deactivate"}
+                        </button>
+                      ) : (
+                        <span style={{ color: "#64748b" }}>Restricted</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

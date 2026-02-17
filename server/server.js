@@ -92,6 +92,12 @@ console.log("JWT_SECRET set?:", !!process.env.JWT_SECRET);
 console.log("EMAIL_USER set?:", !!process.env.EMAIL_USER);
 console.log("========================");
 
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is required in production");
+  process.exit(1);
+}
+
 /* -----------------------
    MongoDB connection
    ----------------------- */
@@ -126,14 +132,17 @@ const transporter = nodemailer.createTransport({
    ----------------------- */
 const userSchema = new mongoose.Schema(
   {
-    name: String,
-    email: { type: String, required: true, unique: true },
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["admin", "hr", "manager", "employee"], default: "employee" },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // Manager for employees
     department: String,
     phoneNumber: String,
     profilePicture: String,
+    isActive: { type: Boolean, default: true },
+    employmentStatus: { type: String, enum: ["active", "inactive"], default: "active" },
+    lastLoginAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -158,15 +167,27 @@ const Employee = mongoose.model("Employee", employeeSchema);
 /* -----------------------
    Middleware - Verify Token & Role
    ----------------------- */
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const token = req.headers["authorization"]?.split(" ")[1];
   if (!token || token === "undefined" || token === "null") {
     return res.status(401).json({ message: "No valid token provided" });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "dev_secret");
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const dbUser = await User.findById(decoded.id).select("_id email role isActive employmentStatus");
+    if (!dbUser) {
+      return res.status(401).json({ message: "User no longer exists" });
+    }
+    if (dbUser.isActive === false || dbUser.employmentStatus === "inactive") {
+      return res.status(403).json({ message: "Account is inactive. Contact HR/Admin." });
+    }
+
+    req.user = {
+      id: String(dbUser._id),
+      email: dbUser.email,
+      role: dbUser.role,
+    };
     next();
   } catch (err) {
     console.error("JWT Verification Error:", err.message);
@@ -183,6 +204,9 @@ const requireRole = (...allowedRoles) => {
   };
 };
 
+const PRIVILEGED_ROLES = new Set(["admin", "hr", "manager"]);
+const APPROVAL_STATUSES = new Set(["Approved", "Rejected"]);
+
 /* -----------------------
    Routes (basic)
    ----------------------- */
@@ -191,17 +215,51 @@ app.get("/", (req, res) => res.send("🚀 Employee Management API is running"));
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Email & password required" });
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedName = String(name || "").trim();
+    const requestedRole = String(role || "employee").trim().toLowerCase();
 
-    const exists = await User.findOne({ email });
+    if (!normalizedName || !normalizedEmail || !password) {
+      return res.status(400).json({ message: "Name, email & password required" });
+    }
+
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const exists = await User.findOne({ email: normalizedEmail });
     if (exists) return res.status(400).json({ message: "User already exists" });
 
-    const validRoles = ["admin", "hr", "manager", "employee"];
-    const userRole = validRoles.includes(role) ? role : "employee";
+    // Security hardening: public signup is employee-only except the very first bootstrap admin.
+    const userCount = await User.countDocuments();
+    const userRole = userCount === 0 && requestedRole === "admin"
+      ? "admin"
+      : "employee";
 
     const hashed = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ name, email, password: hashed, role: userRole });
-    return res.status(201).json({ message: "Registered", user: { _id: newUser._id, id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role } });
+    const newUser = await User.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      password: hashed,
+      role: userRole,
+      isActive: true,
+      employmentStatus: "active",
+    });
+
+    return res.status(201).json({
+      message: "Registered",
+      user: {
+        _id: newUser._id,
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        isActive: newUser.isActive,
+      },
+      roleNotice: PRIVILEGED_ROLES.has(requestedRole) && userRole !== requestedRole
+        ? "Privileged roles are assigned by authorized administrators."
+        : undefined,
+    });
   } catch (err) {
     console.error("register err:", err && err.message ? err.message : err);
     return res.status(500).json({ message: "Server error", error: err.message || err });
@@ -213,15 +271,34 @@ app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email & password required" });
 
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isActive === false || user.employmentStatus === "inactive") {
+      return res.status(403).json({ message: "Account is inactive. Contact HR/Admin." });
+    }
 
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET || "dev_secret", { expiresIn: process.env.JWT_EXPIRE || "7d" });
+    user.lastLoginAt = new Date();
+    await user.save();
 
-    return res.json({ message: "Logged in", token, user: { _id: user._id, id: user._id, name: user.name, email: user.email, role: user.role } });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || "7d" });
+
+    return res.json({
+      message: "Logged in",
+      token,
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+    });
   } catch (err) {
     console.error("login err:", err && err.message ? err.message : err);
     return res.status(500).json({ message: "Login error", error: err.message || err });
@@ -258,6 +335,10 @@ app.post("/api/employees/pay/:id", verifyToken, requireRole("manager", "admin"),
   try {
     const emp = await Employee.findById(req.params.id);
     if (!emp) return res.status(404).json({ message: "Employee not found" });
+
+    if (req.user.role === "manager" && String(emp.managerId || "") !== String(req.user.id)) {
+      return res.status(403).json({ message: "Managers can only pay salary for their own team members" });
+    }
 
     emp.lastPaid = new Date();
     await emp.save();
@@ -310,7 +391,10 @@ app.get("/api/users", verifyToken, requireRole("admin", "hr"), async (req, res) 
 // Get managers (HR can see all, Admin can see all, Manager sees self)
 app.get("/api/managers", verifyToken, requireRole("admin", "hr", "manager"), async (req, res) => {
   try {
-    const managers = await User.find({ role: "manager" }).select("-password").populate("managerId", "name email");
+    const query = req.user.role === "manager"
+      ? { _id: req.user.id, role: "manager" }
+      : { role: "manager" };
+    const managers = await User.find(query).select("-password").populate("managerId", "name email");
     return res.json(managers);
   } catch (err) {
     console.error("get managers err:", err && err.message ? err.message : err);
@@ -321,6 +405,10 @@ app.get("/api/managers", verifyToken, requireRole("admin", "hr", "manager"), asy
 // Get employees under a manager
 app.get("/api/manager-employees/:managerId", verifyToken, requireRole("manager", "admin", "hr"), async (req, res) => {
   try {
+    if (req.user.role === "manager" && String(req.user.id) !== String(req.params.managerId)) {
+      return res.status(403).json({ message: "Managers can only access their own team" });
+    }
+
     const employees = await Employee.find({ managerId: req.params.managerId }).sort({ createdAt: -1 });
     return res.json(employees);
   } catch (err) {
@@ -335,11 +423,112 @@ app.post("/api/assign-manager", verifyToken, requireRole("admin", "hr"), async (
     const { userId, managerId } = req.body;
     if (!userId || !managerId) return res.status(400).json({ message: "userId and managerId required" });
 
-    const user = await User.findByIdAndUpdate(userId, { managerId }, { new: true }).populate("managerId", "name email");
-    return res.json({ message: "Manager assigned", user });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin") return res.status(400).json({ message: "Manager cannot be assigned to admin users" });
+
+    const manager = await User.findById(managerId);
+    if (!manager) return res.status(404).json({ message: "Manager user not found" });
+    if (manager.role !== "manager") return res.status(400).json({ message: "Selected assignee is not a manager" });
+    if (String(user._id) === String(manager._id)) return res.status(400).json({ message: "A user cannot report to themselves" });
+
+    user.managerId = manager._id;
+    await user.save();
+
+    await Employee.updateMany(
+      { email: { $regex: new RegExp(`^${String(user.email).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } },
+      { managerId: manager._id, reportingTo: manager.name }
+    );
+
+    const updatedUser = await User.findById(user._id).select("-password").populate("managerId", "name email");
+    return res.json({ message: "Manager assigned", user: updatedUser });
   } catch (err) {
     console.error("assign manager err:", err && err.message ? err.message : err);
     return res.status(500).json({ message: "Failed to assign manager" });
+  }
+});
+
+// Create user account (Admin/HR)
+app.post("/api/users", verifyToken, requireRole("admin", "hr"), async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      role = "employee",
+      department = "",
+      phoneNumber = "",
+    } = req.body || {};
+
+    const normalizedName = String(name || "").trim();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const normalizedRole = String(role || "employee").trim().toLowerCase();
+
+    if (!normalizedName || !normalizedEmail || !password) {
+      return res.status(400).json({ message: "name, email and password are required" });
+    }
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const allowedRolesForAdmin = new Set(["admin", "hr", "manager", "employee"]);
+    const allowedRolesForHr = new Set(["manager", "employee"]);
+    const allowedRoles = req.user.role === "admin" ? allowedRolesForAdmin : allowedRolesForHr;
+    if (!allowedRoles.has(normalizedRole)) {
+      return res.status(403).json({ message: "You are not allowed to create this role" });
+    }
+
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists) return res.status(400).json({ message: "User with this email already exists" });
+
+    const hashed = await bcrypt.hash(String(password), 10);
+    const created = await User.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      password: hashed,
+      role: normalizedRole,
+      department: String(department || "").trim(),
+      phoneNumber: String(phoneNumber || "").trim(),
+      isActive: true,
+      employmentStatus: "active",
+    });
+
+    const safeUser = await User.findById(created._id).select("-password");
+    return res.status(201).json({ message: "User created successfully", user: safeUser });
+  } catch (err) {
+    console.error("create user err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Failed to create user" });
+  }
+});
+
+// Activate/deactivate user account (Admin/HR)
+app.patch("/api/users/:id/status", verifyToken, requireRole("admin", "hr"), async (req, res) => {
+  try {
+    const { isActive } = req.body || {};
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({ message: "isActive boolean is required" });
+    }
+
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: "User not found" });
+
+    if (req.user.role === "hr" && target.role === "admin") {
+      return res.status(403).json({ message: "HR cannot change admin account status" });
+    }
+
+    if (!isActive && String(target._id) === String(req.user.id)) {
+      return res.status(400).json({ message: "You cannot deactivate your own account" });
+    }
+
+    target.isActive = isActive;
+    target.employmentStatus = isActive ? "active" : "inactive";
+    await target.save();
+
+    const updated = await User.findById(target._id).select("-password").populate("managerId", "name email");
+    return res.json({ message: `User marked as ${isActive ? "active" : "inactive"}`, user: updated });
+  } catch (err) {
+    console.error("user status update err:", err && err.message ? err.message : err);
+    return res.status(500).json({ message: "Failed to update user status" });
   }
 });
 
@@ -900,10 +1089,19 @@ const clearMyLeaveRequests = async (req, res) => {
 app.delete("/api/leave/my-requests", verifyToken, clearMyLeaveRequests);
 app.post("/api/leave/my-requests/clear", verifyToken, clearMyLeaveRequests);
 
-// Get pending leave requests (HR/Admin)
-app.get("/api/leave/pending", verifyToken, requireRole("hr", "admin"), async (req, res) => {
+// Get pending leave requests (HR/Admin/Manager)
+app.get("/api/leave/pending", verifyToken, requireRole("hr", "admin", "manager"), async (req, res) => {
   try {
-    const requests = await LeaveRequest.find({ status: "Pending" }).populate("userId", "name email role");
+    let requests = [];
+    if (req.user.role === "manager") {
+      const teamMemberIds = await User.find({ managerId: req.user.id, role: "employee" }).select("_id");
+      const teamIds = teamMemberIds.map((member) => member._id);
+      requests = await LeaveRequest.find({ status: "Pending", userId: { $in: teamIds } })
+        .populate("userId", "name email role managerId");
+    } else {
+      requests = await LeaveRequest.find({ status: "Pending" }).populate("userId", "name email role managerId");
+    }
+
     return res.json(requests.map(withComputedLeaveFields));
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch leave requests" });
@@ -1072,16 +1270,35 @@ app.get("/api/admin/leaves", verifyToken, requireRole("admin"), async (req, res)
   }
 });
 
-// Approve/Reject leave request (HR/Admin)
-app.put("/api/leave/approve/:id", verifyToken, requireRole("hr", "admin"), async (req, res) => {
+// Approve/Reject leave request (HR/Admin/Manager with scoped access)
+app.put("/api/leave/approve/:id", verifyToken, requireRole("hr", "admin", "manager"), async (req, res) => {
   try {
-    const { status } = req.body;
-    const leaveReq = await LeaveRequest.findById(req.params.id).populate("userId");
+    const status = String(req.body?.status || "");
+    if (!APPROVAL_STATUSES.has(status)) {
+      return res.status(400).json({ message: "Invalid status. Use Approved or Rejected." });
+    }
+
+    const leaveReq = await LeaveRequest.findById(req.params.id).populate("userId", "name email role managerId");
     if (!leaveReq) return res.status(404).json({ message: "Leave request not found" });
+    if (leaveReq.status !== "Pending") {
+      return res.status(400).json({ message: "Only pending leave requests can be updated" });
+    }
+    if (String(leaveReq.userId?._id || "") === String(req.user.id)) {
+      return res.status(403).json({ message: "You cannot approve or reject your own leave request" });
+    }
 
     // Enforce: HR leave requests can only be approved by Admin
     if (leaveReq.userId.role === "hr" && req.user.role !== "admin") {
       return res.status(403).json({ message: "Only Admin can approve HR leave requests" });
+    }
+
+    if (req.user.role === "manager") {
+      if (leaveReq.userId.role !== "employee") {
+        return res.status(403).json({ message: "Managers can only act on employee leave requests" });
+      }
+      if (String(leaveReq.userId.managerId || "") !== String(req.user.id)) {
+        return res.status(403).json({ message: "Managers can only act on their direct reports" });
+      }
     }
 
     leaveReq.status = status;

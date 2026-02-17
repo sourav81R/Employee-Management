@@ -7,6 +7,7 @@ export default function ManagerDashboard() {
   const { user, token: contextToken } = useContext(AuthContext);
   const [teamInfo, setTeamInfo] = useState(null);
   const [teamEmployees, setTeamEmployees] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -48,6 +49,16 @@ export default function ManagerDashboard() {
       } else {
         setTeamEmployees([]);
       }
+
+      const leaveRes = await fetch(buildApiUrl("/api/leave/pending"), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const leaveData = await leaveRes.json();
+      if (Array.isArray(leaveData)) {
+        setPendingLeaves(leaveData);
+      } else {
+        setPendingLeaves([]);
+      }
     } catch (err) {
       console.error("Load data error:", err);
     } finally {
@@ -70,6 +81,29 @@ export default function ManagerDashboard() {
       }
     } catch (err) {
       console.error("Payment error:", err);
+    }
+  }
+
+  async function handleLeaveAction(id, status) {
+    try {
+      const res = await fetch(buildApiUrl(`/api/leave/approve/${id}`), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Leave ${status.toLowerCase()} successfully`);
+        loadManagerData();
+      } else {
+        alert(data.message || "Failed to update leave request");
+      }
+    } catch (err) {
+      console.error("Leave action error:", err);
+      alert("Failed to update leave request");
     }
   }
 
@@ -137,6 +171,52 @@ export default function ManagerDashboard() {
               className="search-input"
             />
           </div>
+        </div>
+
+        <div className="team-section">
+          <div className="section-header">
+            <h2>Pending Leave Requests ({pendingLeaves.length})</h2>
+          </div>
+
+          {pendingLeaves.length > 0 ? (
+            <div className="manager-leave-table-wrapper">
+              <table className="manager-leave-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Dates</th>
+                    <th>Reason</th>
+                    <th>Paid/Unpaid</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingLeaves.map((req) => (
+                    <tr key={req._id}>
+                      <td>{req.userId?.name || "N/A"}</td>
+                      <td>
+                        {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                      </td>
+                      <td>{req.reason}</td>
+                      <td>{req.paidDays || 0}/{req.unpaidDays || 0}</td>
+                      <td>
+                        <button className="btn manager-btn-approve" onClick={() => handleLeaveAction(req._id, "Approved")}>
+                          Approve
+                        </button>
+                        <button className="btn manager-btn-reject" onClick={() => handleLeaveAction(req._id, "Rejected")}>
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="no-data-container">
+              <p className="no-data-text">No pending leave requests</p>
+            </div>
+          )}
         </div>
 
         <div className="team-section">

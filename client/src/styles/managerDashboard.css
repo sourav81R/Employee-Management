@@ -176,6 +176,48 @@
   gap: 10px;
 }
 
+.manager-leave-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+.manager-leave-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.manager-leave-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.manager-leave-table th {
+  color: #fff;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 0.84rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.manager-leave-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #eef2f7;
+  color: #334155;
+}
+
+.manager-btn-approve {
+  margin-right: 8px;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #fff;
+}
+
+.manager-btn-reject {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #fff;
+}
+
 /* Team Cards Grid */
 .team-cards-grid {
   display: grid;

@@ -1,5 +1,6 @@
 // src/context/AuthContext.js
 import React, { createContext, useState, useEffect } from "react";
+import axios from "axios";
 
 export const AuthContext = createContext();
 
@@ -28,6 +29,14 @@ export const AuthProvider = ({ children }) => {
       setAuthLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common["Authorization"];
+    }
+  }, [token]);
 
   const login = (userData, tokenData) => {
     if (!userData || !tokenData) return;
