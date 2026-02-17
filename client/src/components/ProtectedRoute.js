@@ -5,6 +5,10 @@ import { AuthContext } from "../context/AuthContext";
 
 export function ProtectedRoute({ children, requiredRoles }) {
   const { user, authLoading } = useContext(AuthContext);
+  const currentRole = String(user?.role || "").trim().toLowerCase();
+  const normalizedRequiredRoles = Array.isArray(requiredRoles)
+    ? requiredRoles.map((role) => String(role || "").trim().toLowerCase())
+    : null;
 
   if (authLoading) {
     return (
@@ -18,12 +22,12 @@ export function ProtectedRoute({ children, requiredRoles }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRoles && !requiredRoles.includes(user.role)) {
+  if (normalizedRequiredRoles && !normalizedRequiredRoles.includes(currentRole)) {
     return (
       <div style={{ textAlign: "center", padding: "100px 20px" }}>
         <h1>Access Denied</h1>
         <p>You don't have permission to access this page.</p>
-        <p>Required role: {requiredRoles.join(", ")}</p>
+        <p>Required role: {normalizedRequiredRoles.join(", ")}</p>
         <a href="/" style={{ color: "#667eea", textDecoration: "none" }}>
           Go to Dashboard
         </a>

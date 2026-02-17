@@ -42,7 +42,10 @@ export default function Login() {
       setPassword("");
 
       // Redirect depending on role
-      if (user.role?.toLowerCase() === "admin") navigate("/admin");
+      const normalizedRole = String(user.role || "").trim().toLowerCase();
+      if (normalizedRole === "admin") navigate("/admin");
+      else if (normalizedRole === "hr") navigate("/hr");
+      else if (normalizedRole === "manager") navigate("/manager");
       else navigate("/");
 
     } catch (err) {
