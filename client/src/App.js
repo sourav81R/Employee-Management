@@ -15,7 +15,9 @@ import Register from "./pages/Register"; // ensure file is src/pages/Register.js
 import AttendanceCapture from "./components/AttendanceCapture"; // New Attendance Capture component
 import AttendanceHistory from "./components/AttendanceHistory"; // New Attendance History component
 import LeaveRequestPage from "./pages/LeaveRequestPage"; // Leave Request page
+import CompanyInfoPage from "./pages/CompanyInfoPage";
 import Navbar from "./components/navbar"; // Import the Navbar from its dedicated file
+import Footer from "./components/Footer";
 import "./App.css";
 import { ProtectedRoute } from "./components/ProtectedRoute"; // Import the generic ProtectedRoute
 
@@ -29,8 +31,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute"; // Import the gene
 export default function App() {
   return (
     <Router>
-      <Navbar />
-      <Routes>
+      <div className="app-shell">
+        <Navbar />
+        <main className="app-main">
+          <Routes>
           {/* Dashboard (All logged-in users) */}
           <Route
             path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
@@ -69,6 +73,10 @@ export default function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/about-us" element={<CompanyInfoPage />} />
+          <Route path="/careers" element={<CompanyInfoPage />} />
+          <Route path="/privacy-policy" element={<CompanyInfoPage />} />
+          <Route path="/terms-of-service" element={<CompanyInfoPage />} />
 
           {/* Manager Dashboard */}
           <Route
@@ -105,7 +113,10 @@ export default function App() {
               </div>
             }
           />
-      </Routes>
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </Router>
   );
 }

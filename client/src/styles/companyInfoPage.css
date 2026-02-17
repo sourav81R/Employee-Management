@@ -1,0 +1,80 @@
+.company-page {
+  min-height: calc(100vh - 220px);
+  padding: 34px 16px 22px;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede8fb 100%);
+}
+
+.company-page-card {
+  max-width: 980px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 20px;
+  padding: 34px;
+  box-shadow: 0 16px 35px rgba(66, 82, 136, 0.14);
+}
+
+.company-page-card h1 {
+  margin: 0 0 12px;
+  color: #102849;
+  font-size: clamp(1.7rem, 2.2vw, 2.35rem);
+}
+
+.company-page-intro {
+  margin: 0;
+  color: #445975;
+  line-height: 1.65;
+  font-size: 1.04rem;
+}
+
+.company-page-sections {
+  margin-top: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.company-page-section {
+  padding: 16px;
+  border: 1px solid rgba(16, 40, 73, 0.14);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+}
+
+.company-page-section h2 {
+  margin: 0 0 6px;
+  color: #102849;
+  font-size: 1.12rem;
+}
+
+.company-page-section p {
+  margin: 0;
+  color: #3f5370;
+  line-height: 1.58;
+}
+
+.company-page-actions {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.company-page-actions a {
+  text-decoration: none;
+  color: #102849;
+  border: 1px solid rgba(16, 40, 73, 0.22);
+  background: #edf2ff;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.company-page-actions a:hover {
+  color: #ff5a3d;
+}
+
+@media (max-width: 720px) {
+  .company-page-card {
+    padding: 22px;
+  }
+}

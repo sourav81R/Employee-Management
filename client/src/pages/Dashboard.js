@@ -132,10 +132,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="dashboard-footer">
-        <p>Employee Management System © 2025</p>
-      </footer>
     </div>
   );
 }
