@@ -356,37 +356,46 @@ export default function HomeAssistant({ userName }) {
 
   return (
     <section className="home-assistant">
-      <div className="assistant-head">
-        <span className="assistant-badge">EmployeeHub AI</span>
-        <h2>Ask your dashboard assistant</h2>
-        <p>Type or talk. Replies are personalized to your logged-in account.</p>
-      </div>
+      <div className="assistant-glow assistant-glow-left" aria-hidden="true"></div>
+      <div className="assistant-glow assistant-glow-right" aria-hidden="true"></div>
 
-      <div className="assistant-tools">
-        <button
-          type="button"
-          className={`assistant-tool ${isListening ? "active" : ""}`}
-          onClick={toggleVoiceInput}
-          disabled={isThinking}
-          title={isListening ? "Stop voice input" : "Start voice input"}
-          aria-label={isListening ? "Stop voice input" : "Start voice input"}
-        >
-          <MicIcon />
-          <span className="assistant-sr-only">{isListening ? "Stop mic" : "Start mic"}</span>
-        </button>
-        <button
-          type="button"
-          className={`assistant-tool ${voiceReplyEnabled ? "active" : "muted"}`}
-          onClick={toggleVoiceReply}
-          disabled={!voiceOutputSupported}
-          title={voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
-          aria-label={voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
-        >
-          {voiceReplyEnabled ? <VolumeOnIcon /> : <VolumeOffIcon />}
-          <span className="assistant-sr-only">
-            {voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
-          </span>
-        </button>
+      <div className="assistant-header-row">
+        <div className="assistant-head">
+          <span className="assistant-badge">EmployeeHub AI</span>
+          <h2>Ask your dashboard assistant</h2>
+          <p>Type or talk. Replies are personalized to your logged-in account.</p>
+          <div className="assistant-live">
+            <span className="assistant-live-dot" aria-hidden="true"></span>
+            <span>Live assistant ready</span>
+          </div>
+        </div>
+
+        <div className="assistant-tools">
+          <button
+            type="button"
+            className={`assistant-tool ${isListening ? "active" : ""}`}
+            onClick={toggleVoiceInput}
+            disabled={isThinking}
+            title={isListening ? "Stop voice input" : "Start voice input"}
+            aria-label={isListening ? "Stop voice input" : "Start voice input"}
+          >
+            <MicIcon />
+            <span className="assistant-sr-only">{isListening ? "Stop mic" : "Start mic"}</span>
+          </button>
+          <button
+            type="button"
+            className={`assistant-tool ${voiceReplyEnabled ? "active" : "muted"}`}
+            onClick={toggleVoiceReply}
+            disabled={!voiceOutputSupported}
+            title={voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
+            aria-label={voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
+          >
+            {voiceReplyEnabled ? <VolumeOnIcon /> : <VolumeOffIcon />}
+            <span className="assistant-sr-only">
+              {voiceReplyEnabled ? "Mute assistant voice" : "Unmute assistant voice"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {!voiceInputSupported && (
@@ -397,37 +406,47 @@ export default function HomeAssistant({ userName }) {
       )}
       {error && <p className="assistant-error">{error}</p>}
 
-      <div className="assistant-thread" ref={threadRef}>
-        {messages.map((message, index) => (
-          <div
-            key={`${message.role}-${index}`}
-            className={`assistant-message ${message.role === "user" ? "user" : "bot"}`}
-          >
-            {message.text}
-          </div>
-        ))}
-        {isThinking && (
-          <div className="assistant-message bot thinking">
-            Thinking<span>.</span><span>.</span><span>.</span>
-          </div>
-        )}
+      <div className="assistant-thread-shell">
+        <div className="assistant-thread" ref={threadRef}>
+          {messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}`}
+              className={`assistant-message ${message.role === "user" ? "user" : "bot"}`}
+            >
+              <span className="assistant-role-label">
+                {message.role === "user" ? "You" : "Assistant"}
+              </span>
+              <span className="assistant-message-body">{message.text}</span>
+            </div>
+          ))}
+          {isThinking && (
+            <div className="assistant-message bot thinking">
+              <span className="assistant-role-label">Assistant</span>
+              Thinking<span>.</span><span>.</span><span>.</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="assistant-hints">
-        {hints.map((hint) => (
-          <button
-            key={hint}
-            type="button"
-            className="assistant-hint-chip"
-            onClick={() => sendPrompt(hint)}
-            disabled={isThinking}
-          >
-            {hint}
-          </button>
-        ))}
+      <div className="assistant-hints-block">
+        <p className="assistant-hints-title">Suggested prompts</p>
+        <div className="assistant-hints">
+          {hints.map((hint) => (
+            <button
+              key={hint}
+              type="button"
+              className="assistant-hint-chip"
+              onClick={() => sendPrompt(hint)}
+              disabled={isThinking}
+            >
+              {hint}
+            </button>
+          ))}
+        </div>
       </div>
 
       <form className="assistant-composer" onSubmit={onSubmit}>
+        <span className="assistant-composer-mark" aria-hidden="true">✦</span>
         <input
           type="text"
           value={prompt}
