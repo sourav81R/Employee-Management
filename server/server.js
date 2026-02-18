@@ -111,6 +111,7 @@ console.log("FRONTEND_ORIGIN:", process.env.FRONTEND_ORIGIN || "https://employee
 console.log("MONGO_URI set?:", !!process.env.MONGO_URI);
 console.log("JWT_SECRET set?:", !!process.env.JWT_SECRET);
 console.log("EMAIL_USER set?:", !!process.env.EMAIL_USER);
+console.log("GEMINI_API_KEY set?:", !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY));
 console.log("========================");
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
@@ -118,6 +119,18 @@ if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
   console.error("❌ JWT_SECRET is required in production");
   process.exit(1);
 }
+const GEMINI_API_KEY = String(
+  process.env.GEMINI_API_KEY
+  || process.env.GOOGLE_GEMINI_API_KEY
+  || process.env.GOOGLE_API_KEY
+  || ""
+).trim();
+const GEMINI_MODEL = String(process.env.GEMINI_MODEL || "gemini-1.5-flash").trim();
+const GEMINI_MODEL_FALLBACKS = Array.from(
+  new Set([GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash"].filter(Boolean))
+);
+const MAX_ASSISTANT_PROMPT_LENGTH = 3000;
+const MAX_ASSISTANT_HISTORY_ITEMS = 12;
 
 /* -----------------------
    MongoDB connection
@@ -229,6 +242,271 @@ const resolveEffectiveRole = async (userDoc) => {
   }
 
   return normalizedRole;
+};
+
+const assistantTodayWindow = () => {
+  const now = new Date();
+  const startUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
+  return { startUtc, endUtc, dateKey: startUtc.toISOString().slice(0, 10) };
+};
+
+const sanitizeAssistantText = (value, maxLength = 1200) => {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text.slice(0, maxLength);
+};
+
+const summarizeDepartments = (items, maxItems = 5) => {
+  const counts = new Map();
+  for (const item of items || []) {
+    const name = String(item?.department || "").trim() || "Unassigned";
+    counts.set(name, (counts.get(name) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, maxItems)
+    .map(([department, count]) => ({ department, count }));
+};
+
+const buildAssistantUserContext = async (userDoc, effectiveRole) => {
+  const role = normalizeRole(effectiveRole || userDoc?.role, "employee");
+  const { startUtc, endUtc, dateKey } = assistantTodayWindow();
+  const userId = userDoc?._id;
+
+  const [todayAttendance, leaveCounts] = await Promise.all([
+    Attendance.findOne({
+      $and: [
+        { $or: [{ userId }, { employeeId: userId }] },
+        {
+          $or: [
+            { checkIn: { $gte: startUtc, $lt: endUtc } },
+            { timestamp: { $gte: startUtc, $lt: endUtc } },
+            { date: dateKey },
+          ],
+        },
+      ],
+    })
+      .sort({ checkIn: -1, timestamp: -1, createdAt: -1 })
+      .lean(),
+    LeaveRequest.aggregate([
+      { $match: { userId } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const leaveSummary = { Approved: 0, Pending: 0, Rejected: 0 };
+  for (const row of leaveCounts || []) {
+    if (leaveSummary[row?._id] !== undefined) {
+      leaveSummary[row._id] = row.count;
+    }
+  }
+
+  const context = {
+    profile: {
+      name: userDoc?.name || "",
+      email: userDoc?.email || "",
+      role,
+      department: userDoc?.department || null,
+      manager: userDoc?.managerId
+        ? {
+          name: userDoc.managerId.name || "",
+          email: userDoc.managerId.email || "",
+        }
+        : null,
+    },
+    self: {
+      todayAttendance: todayAttendance
+        ? {
+          checkIn: todayAttendance.checkIn || todayAttendance.timestamp || null,
+          checkOut: todayAttendance.checkOut || null,
+          workedMinutes: Number(todayAttendance.workedMinutes) || 0,
+          salaryCut: !!todayAttendance.salaryCut,
+        }
+        : null,
+      leaveSummary,
+    },
+  };
+
+  if (role === "employee") {
+    const employeeRecord = await Employee.findOne({
+      email: { $regex: new RegExp(`^${escapeRegex(userDoc?.email || "")}$`, "i") },
+    })
+      .select("employeeId position department lastPaid")
+      .lean();
+
+    if (employeeRecord) {
+      context.employeeRecord = {
+        employeeId: employeeRecord.employeeId || null,
+        position: employeeRecord.position || null,
+        department: employeeRecord.department || null,
+        lastPaid: employeeRecord.lastPaid || null,
+      };
+    }
+  }
+
+  if (role === "manager") {
+    const team = await Employee.find({ managerId: userId })
+      .select("name position department lastPaid")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    context.managerView = {
+      teamSize: team.length,
+      topDepartments: summarizeDepartments(team, 4),
+      recentlyPaidCount: team.filter((entry) => !!entry.lastPaid).length,
+    };
+  }
+
+  if (role === "admin" || role === "hr") {
+    const [totalUsers, totalEmployees, pendingLeaveRequests, checkedInToday, departmentList] = await Promise.all([
+      User.countDocuments({ isActive: { $ne: false } }),
+      Employee.countDocuments(),
+      LeaveRequest.countDocuments({ status: "Pending" }),
+      Attendance.countDocuments({ checkIn: { $gte: startUtc, $lt: endUtc } }),
+      Employee.distinct("department"),
+    ]);
+
+    context.organization = {
+      totalUsers,
+      totalEmployees,
+      pendingLeaveRequests,
+      checkedInToday,
+      departmentCount: departmentList.filter((dep) => String(dep || "").trim()).length,
+    };
+  }
+
+  return context;
+};
+
+const createAssistantError = (message, statusCode = 500) => {
+  const error = new Error(String(message || "Assistant error"));
+  error.statusCode = statusCode;
+  return error;
+};
+
+const looksLikePlaceholderGeminiKey = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return true;
+  return (
+    normalized.includes("your_gemini_api_key_here")
+    || normalized.includes("replace_with")
+    || normalized.includes("paste_key_here")
+  );
+};
+
+const isModelNotFoundError = (statusCode, message) => {
+  if (statusCode === 404) return true;
+  const text = String(message || "").toLowerCase();
+  return text.includes("not found")
+    || text.includes("unsupported model")
+    || text.includes("is not supported")
+    || text.includes("model");
+};
+
+const extractGeminiAnswerText = (payload) => {
+  const answer = (payload?.candidates || [])
+    .flatMap((candidate) => candidate?.content?.parts || [])
+    .map((part) => String(part?.text || "").trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+  return answer;
+};
+
+const generateGeminiAssistantReply = async ({ prompt, history, context }) => {
+  if (looksLikePlaceholderGeminiKey(GEMINI_API_KEY)) {
+    throw createAssistantError(
+      "Assistant is not configured. Add a valid GEMINI_API_KEY (or GOOGLE_API_KEY) in server/.env and restart backend.",
+      503
+    );
+  }
+  if (typeof fetch !== "function") {
+    throw createAssistantError("Node runtime does not support fetch. Use Node 18+.", 500);
+  }
+
+  const safeHistory = Array.isArray(history) ? history.slice(-MAX_ASSISTANT_HISTORY_ITEMS) : [];
+  const contents = [];
+
+  for (const item of safeHistory) {
+    const text = sanitizeAssistantText(item?.text, 1000);
+    if (!text) continue;
+    const role = String(item?.role || "").toLowerCase() === "assistant" ? "model" : "user";
+    contents.push({ role, parts: [{ text }] });
+  }
+
+  contents.push({
+    role: "user",
+    parts: [{ text: sanitizeAssistantText(prompt, MAX_ASSISTANT_PROMPT_LENGTH) }],
+  });
+
+  const systemInstruction = [
+    "You are EmployeeHub AI Assistant inside an employee management app.",
+    "Users may ask both general questions and employee-dashboard related questions.",
+    "For general questions, answer normally. For dashboard questions, prioritize USER_CONTEXT_JSON.",
+    "Do not invent company-specific facts. If context data is missing, say that clearly.",
+    "Use concise bullet points when useful.",
+    `USER_CONTEXT_JSON: ${JSON.stringify(context)}`,
+  ].join("\n");
+
+  let lastModelError = null;
+
+  for (const modelName of GEMINI_MODEL_FALLBACKS) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents,
+          generationConfig: {
+            temperature: 0.35,
+            topP: 0.9,
+            maxOutputTokens: 700,
+          },
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) {
+      const answer = extractGeminiAnswerText(payload);
+      if (!answer) {
+        throw createAssistantError("Gemini returned an empty response.", 502);
+      }
+      return answer;
+    }
+
+    const message = payload?.error?.message || `Gemini request failed with status ${response.status}`;
+    const lowerMessage = String(message).toLowerCase();
+    if (lowerMessage.includes("api key not valid") || lowerMessage.includes("invalid api key")) {
+      throw createAssistantError("Invalid Gemini API key. Update server/.env and restart backend.", 503);
+    }
+    if (response.status === 429 || lowerMessage.includes("quota")) {
+      throw createAssistantError("Gemini quota exceeded. Please check billing/quota and try again.", 429);
+    }
+
+    if (isModelNotFoundError(response.status, message)) {
+      lastModelError = createAssistantError(`Configured Gemini model '${modelName}' is unavailable.`, 502);
+      continue;
+    }
+
+    throw createAssistantError(`Gemini error: ${sanitizeAssistantText(message, 220)}`, 502);
+  }
+
+  if (lastModelError) {
+    throw lastModelError;
+  }
+  throw createAssistantError("Gemini request failed.", 502);
 };
 
 /* -----------------------
@@ -607,6 +885,37 @@ app.get("/api/auth/profile", verifyToken, async (req, res) => {
   } catch (err) {
     console.error("profile err:", err && err.message ? err.message : err);
     return res.status(500).json({ message: "Failed to fetch profile" });
+  }
+});
+
+// Gemini-backed assistant chat (authenticated, user-specific context)
+app.post("/api/assistant/chat", verifyToken, requireRole("admin", "hr", "manager", "employee"), async (req, res) => {
+  try {
+    if (!GEMINI_API_KEY) {
+      return res.status(503).json({ message: "Assistant is not configured. Add GEMINI_API_KEY (or GOOGLE_API_KEY) in server/.env and restart backend." });
+    }
+
+    const prompt = sanitizeAssistantText(req.body?.prompt, MAX_ASSISTANT_PROMPT_LENGTH);
+    if (!prompt) {
+      return res.status(400).json({ message: "Prompt is required." });
+    }
+
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const user = await User.findById(req.user.id)
+      .select("_id name email role department managerId")
+      .populate("managerId", "name email");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const effectiveRole = await resolveEffectiveRole(user);
+    const context = await buildAssistantUserContext(user, effectiveRole);
+    const answer = await generateGeminiAssistantReply({ prompt, history, context });
+
+    return res.json({ answer });
+  } catch (err) {
+    console.error("assistant chat err:", err && err.message ? err.message : err);
+    const statusCode = Number(err?.statusCode) >= 400 ? Number(err.statusCode) : 500;
+    const message = sanitizeAssistantText(err?.message || "Assistant request failed. Please try again.", 260);
+    return res.status(statusCode).json({ message });
   }
 });
 

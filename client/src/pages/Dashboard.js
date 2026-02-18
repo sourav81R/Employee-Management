@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { fetchEmployees } from "../api";
 import { AuthContext } from "../context/AuthContext";
+import HomeAssistant from "../components/HomeAssistant";
 import "../App.css";
 import "../styles/dashboard.css";
 
@@ -56,6 +57,8 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="dashboard-content">
+        <HomeAssistant userName={user?.name || "User"} />
+
         {/* Search Section */}
         <div className="search-section">
           <div className="search-header">
