@@ -50,6 +50,7 @@
   margin: 4px 0;
   color: #4f6078;
   font-size: 0.86rem;
+  overflow-wrap: anywhere;
 }
 
 .attendance-details strong {
@@ -136,5 +137,15 @@
 
   .attendance-history-actions .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .attendance-list {
+    grid-template-columns: 1fr;
+  }
+
+  .map-modal-content {
+    padding: 12px;
   }
 }

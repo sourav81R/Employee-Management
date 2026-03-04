@@ -67,7 +67,7 @@ export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
   }
 
   return (
-    <form className="employee-form" onSubmit={handleSubmit} style={{ maxWidth: "600px", margin: "0 auto" }}>
+    <form className="employee-form employee-form-compact" onSubmit={handleSubmit}>
       <input
         type="text"
         name="employeeId"
@@ -118,7 +118,7 @@ export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
         onChange={handleChange}
       />
 
-      <label style={{ display: "block", margin: "8px 0" }}>
+      <label className="salary-paid-toggle">
         <input
           type="checkbox"
           name="salaryPaid"
@@ -128,17 +128,16 @@ export default function EmployeeForm({ onAdd, onUpdate, editing, setEditing }) {
         Salary Paid
       </label>
 
-      <div className="form-actions" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-        <button type="submit" className="submit-btn">
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary">
           {editing ? "Update Employee" : "Add Employee"}
         </button>
 
         {editing && (
           <button
             type="button"
-            className="cancel-btn"
+            className="btn btn-secondary"
             onClick={() => setEditing(null)}
-            style={{ marginLeft: 8 }}
           >
             Cancel
           </button>

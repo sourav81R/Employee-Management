@@ -125,6 +125,12 @@ h4 {
   box-shadow: var(--shadow-md);
 }
 
+.employee-form-compact {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 14px;
+}
+
 .employee-form input,
 .employee-form textarea,
 .employee-form select {
@@ -151,6 +157,11 @@ h4 {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.salary-paid-toggle {
+  display: block;
+  margin: 8px 0;
 }
 
 .btn {
@@ -257,6 +268,11 @@ h4 {
   background: rgba(15, 118, 110, 0.04);
 }
 
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .no-data {
   margin: 0;
   text-align: center;
@@ -331,5 +347,143 @@ footer {
   .btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-wrapper,
+  .users-table-wrapper,
+  .manager-leave-table-wrapper {
+    overflow-x: visible;
+  }
+
+  .employee-table,
+  .users-table,
+  .manager-leave-table {
+    min-width: 0 !important;
+    border: 0;
+    background: transparent;
+  }
+
+  .employee-table thead,
+  .users-table thead,
+  .manager-leave-table thead {
+    display: none;
+  }
+
+  .employee-table,
+  .employee-table tbody,
+  .employee-table tr,
+  .employee-table td,
+  .users-table,
+  .users-table tbody,
+  .users-table tr,
+  .users-table td,
+  .manager-leave-table,
+  .manager-leave-table tbody,
+  .manager-leave-table tr,
+  .manager-leave-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .employee-table tbody tr,
+  .users-table tbody tr,
+  .manager-leave-table tbody tr {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: 0 8px 18px rgba(10, 30, 42, 0.06);
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
+
+  .employee-table td,
+  .users-table td,
+  .manager-leave-table td {
+    padding: 9px 0;
+    border-bottom: 1px solid #e6eee8;
+    text-align: right;
+    font-size: 0.84rem;
+  }
+
+  .employee-table td::before,
+  .users-table td::before,
+  .manager-leave-table td::before {
+    content: attr(data-label);
+    float: left;
+    margin-right: 12px;
+    color: #5f7088;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .employee-table td:last-child,
+  .users-table td:last-child,
+  .manager-leave-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .users-table td:first-child,
+  .users-table th:first-child {
+    padding-left: 0;
+    text-align: right;
+  }
+
+  .employee-table td[colspan],
+  .users-table td[colspan],
+  .manager-leave-table td[colspan] {
+    text-align: left;
+  }
+
+  .employee-table td[colspan]::before,
+  .users-table td[colspan]::before,
+  .manager-leave-table td[colspan]::before {
+    content: none;
+  }
+
+  .employee-table .name-cell,
+  .users-table .user-name {
+    display: block;
+  }
+
+  .employee-table .employee-avatar,
+  .users-table .user-avatar {
+    display: none;
+  }
+
+  .employee-table td[data-label="Actions"],
+  .users-table td[data-label="Actions"],
+  .manager-leave-table td[data-label="Action"] {
+    text-align: left;
+  }
+
+  .employee-table td[data-label="Actions"]::before,
+  .users-table td[data-label="Actions"]::before,
+  .manager-leave-table td[data-label="Action"]::before {
+    float: none;
+    display: block;
+    margin: 0 0 8px;
+  }
+
+  .employee-table td[data-label="Actions"] .btn,
+  .users-table td[data-label="Actions"] .btn,
+  .manager-leave-table td[data-label="Action"] .btn {
+    width: 100%;
+    margin: 0 0 8px;
+  }
+
+  .employee-table td[data-label="Actions"] .btn:last-child,
+  .users-table td[data-label="Actions"] .btn:last-child,
+  .manager-leave-table td[data-label="Action"] .btn:last-child {
+    margin-bottom: 0;
+  }
+
+  .not-found {
+    margin: 28px auto;
+    padding: 20px 14px;
+    border-radius: var(--radius-lg);
   }
 }

@@ -177,11 +177,11 @@ export default function ManagerDashboard() {
                 <tbody>
                   {pendingLeaves.map((req) => (
                     <tr key={req._id}>
-                      <td>{req.userId?.name || "N/A"}</td>
-                      <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
-                      <td>{req.reason}</td>
-                      <td>{req.paidDays || 0}/{req.unpaidDays || 0}</td>
-                      <td>
+                      <td data-label="Employee">{req.userId?.name || "N/A"}</td>
+                      <td data-label="Dates">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
+                      <td data-label="Reason">{req.reason}</td>
+                      <td data-label="Paid/Unpaid">{req.paidDays || 0}/{req.unpaidDays || 0}</td>
+                      <td data-label="Action">
                         <button className="btn manager-btn-approve" onClick={() => handleLeaveAction(req._id, "Approved")}>
                           Approve
                         </button>

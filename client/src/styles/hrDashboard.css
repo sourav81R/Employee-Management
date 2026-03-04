@@ -118,6 +118,7 @@
   margin: 4px 0 0;
   color: #607189;
   font-size: 0.87rem;
+  overflow-wrap: anywhere;
 }
 
 .users-table-wrapper {
@@ -127,7 +128,7 @@
 
 .users-table {
   width: 100%;
-  min-width: 780px;
+  min-width: 700px;
   border-collapse: collapse;
   border: 1px solid #d8e5de;
   border-radius: 12px;
@@ -193,7 +194,8 @@
   align-items: center;
   gap: 8px;
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .role-badge {
@@ -389,5 +391,46 @@
 
   .modal-buttons {
     flex-direction: column;
+  }
+
+  .users-table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-grid,
+  .managers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header .btn {
+    width: 100%;
+  }
+
+  .status-action-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .modal {
+    width: calc(100% - 16px);
+  }
+
+  .users-table td:not([data-label="Actions"]) {
+    text-align: right;
+  }
+
+  .users-table td:first-child {
+    padding-left: 0;
+  }
+
+  .users-table .user-name {
+    display: block;
+    text-align: right;
+  }
+
+  .users-table .user-avatar {
+    display: none;
   }
 }

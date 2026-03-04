@@ -114,6 +114,7 @@
 
 .search-wrapper {
   flex: 1;
+  min-width: 0;
 }
 
 .search-input {
@@ -138,7 +139,7 @@
 
 .users-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
@@ -199,6 +200,7 @@
   margin: 0;
   color: #607189;
   font-size: 0.87rem;
+  overflow-wrap: anywhere;
 }
 
 .no-data-message {
@@ -215,7 +217,7 @@
 }
 
 .employee-records-table {
-  min-width: 820px;
+  min-width: 760px;
 }
 
 .role-badge {
@@ -345,6 +347,43 @@
   }
 
   .employee-table {
-    min-width: 720px;
+    min-width: 640px;
+  }
+
+  .employee-records-table {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-lg {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .leave-summary-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .leave-summary-controls input {
+    width: 100%;
+  }
+
+  .reject-btn {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+
+  .action-cell {
+    min-width: 0;
+  }
+
+  .action-btn-group {
+    grid-template-columns: 1fr;
   }
 }

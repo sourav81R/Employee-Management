@@ -106,15 +106,15 @@ export default function Dashboard() {
                 <tbody>
                   {filteredEmployees.map((emp) => (
                     <tr key={emp._id} className="table-row">
-                      <td className="id-cell">{emp.employeeId}</td>
-                      <td className="name-cell">
+                      <td className="id-cell" data-label="Employee ID">{emp.employeeId}</td>
+                      <td className="name-cell" data-label="Name">
                         <span className="employee-avatar">{emp.name.charAt(0)}</span>
                         {emp.name}
                       </td>
-                      <td className="email-cell">{emp.email}</td>
-                      <td className="position-cell">{emp.position || "-"}</td>
-                      <td className="department-cell">{emp.department || "-"}</td>
-                      <td className="date-cell">
+                      <td className="email-cell" data-label="Email">{emp.email}</td>
+                      <td className="position-cell" data-label="Position">{emp.position || "-"}</td>
+                      <td className="department-cell" data-label="Department">{emp.department || "-"}</td>
+                      <td className="date-cell" data-label="Last Paid">
                         <span className={`date-badge ${emp.lastPaid ? "paid" : "unpaid"}`}>
                           {emp.lastPaid ? new Date(emp.lastPaid).toLocaleDateString() : "Unpaid"}
                         </span>

@@ -13,17 +13,17 @@ function Footer() {
             <h2>EmployeeHub</h2>
             <p>Delivering productivity, one team at a time.</p>
             <div className="footer-socials">
-              <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub" className="social-link social-link-github">
+              <a href="https://github.com/sourav81R" target="_blank" rel="noreferrer" aria-label="GitHub" className="social-link social-link-github">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.34 6.84 9.7.5.1.66-.22.66-.49 0-.24-.01-.88-.02-1.73-2.78.62-3.37-1.38-3.37-1.38-.45-1.2-1.11-1.51-1.11-1.51-.91-.64.07-.63.07-.63 1 .07 1.54 1.06 1.54 1.06.9 1.57 2.35 1.12 2.93.86.1-.67.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.09 0-1.12.38-2.04 1.02-2.76-.11-.26-.45-1.3.09-2.71 0 0 .83-.27 2.73 1.06a9.22 9.22 0 0 1 4.97 0c1.9-1.33 2.73-1.06 2.73-1.06.54 1.41.2 2.45.1 2.71.63.72 1.01 1.64 1.01 2.76 0 3.96-2.35 4.83-4.58 5.08.36.32.67.93.67 1.89 0 1.36-.01 2.45-.01 2.78 0 .27.17.6.67.49A10.3 10.3 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z" />
                 </svg>
               </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="social-link social-link-linkedin">
+              <a href="https://www.linkedin.com/in/souravchowdhury-2003r/" target="_blank" rel="noreferrer" aria-label="LinkedIn" className="social-link social-link-linkedin">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M5.2 8.2a1.9 1.9 0 1 1 0-3.8 1.9 1.9 0 0 1 0 3.8Zm1.6 2.2H3.6V20h3.2v-9.6Zm5.1 0H8.8V20H12v-5.1c0-2.9 3.8-3.2 3.8 0V20H19v-6.2c0-4.8-5.4-4.6-7.1-2.2v-1.2Z" />
                 </svg>
               </a>
-              <a href="/" aria-label="Portfolio" className="social-link social-link-portfolio">
+              <a href="https://portfolio-topaz-eight-91.vercel.app/" target="_blank" rel="noreferrer" aria-label="Portfolio" className="social-link social-link-portfolio">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.9" />
                   <path d="M3 12h18M12 3c2.6 2.4 4 5.7 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.7-4-9s1.4-6.6 4-9Z" stroke="currentColor" strokeWidth="1.6" />

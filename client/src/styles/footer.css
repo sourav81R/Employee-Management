@@ -1,4 +1,6 @@
 .app-footer {
+  --footer-hover: #d97706;
+  --footer-hover-shadow: rgba(217, 119, 6, 0.28);
   position: relative;
   margin-top: 32px;
   padding: 52px 18px 24px;
@@ -70,21 +72,21 @@
 }
 
 .social-link-github:hover {
-  background: #111827;
-  border-color: #111827;
-  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.26);
+  background: var(--footer-hover);
+  border-color: var(--footer-hover);
+  box-shadow: 0 10px 20px var(--footer-hover-shadow);
 }
 
 .social-link-linkedin:hover {
-  background: #0a66c2;
-  border-color: #0a66c2;
-  box-shadow: 0 10px 20px rgba(10, 102, 194, 0.26);
+  background: var(--footer-hover);
+  border-color: var(--footer-hover);
+  box-shadow: 0 10px 20px var(--footer-hover-shadow);
 }
 
 .social-link-portfolio:hover {
-  background: #0f766e;
-  border-color: #0f766e;
-  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.26);
+  background: var(--footer-hover);
+  border-color: var(--footer-hover);
+  box-shadow: 0 10px 20px var(--footer-hover-shadow);
 }
 
 .footer-column h3 {
@@ -108,7 +110,7 @@
 }
 
 .footer-links a:hover {
-  color: #0f766e;
+  color: var(--footer-hover);
 }
 
 .footer-contact-list {
@@ -126,6 +128,7 @@
   align-items: center;
   color: #4a5d74;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 
 .contact-icon {
@@ -167,8 +170,8 @@
 
 .store-link:hover {
   transform: translateY(-1px);
-  border-color: #0f766e;
-  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.16);
+  border-color: var(--footer-hover);
+  box-shadow: 0 10px 20px rgba(217, 119, 6, 0.2);
 }
 
 .store-links .store-link:nth-child(2) {
@@ -232,6 +235,10 @@
 @media (max-width: 820px) {
   .footer-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+
+  .store-link {
+    max-width: 100%;
   }
 }
 

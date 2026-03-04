@@ -193,11 +193,11 @@ export default function HRDashboard() {
                   <tbody>
                     {leaveRequests.map((req) => (
                       <tr key={req._id}>
-                        <td>{req.userId?.name} ({req.userId?.email})</td>
-                        <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
-                        <td>{req.reason}</td>
-                        <td>{req.paidDays || 0}/{req.unpaidDays || 0}{req.salaryCut ? <span className="salary-cut-note">(Cut)</span> : null}</td>
-                        <td>
+                        <td data-label="Employee">{req.userId?.name} ({req.userId?.email})</td>
+                        <td data-label="Dates">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
+                        <td data-label="Reason">{req.reason}</td>
+                        <td data-label="Paid/Unpaid">{req.paidDays || 0}/{req.unpaidDays || 0}{req.salaryCut ? <span className="salary-cut-note">(Cut)</span> : null}</td>
+                        <td data-label="Actions">
                           <button className="btn btn-primary" onClick={() => handleLeaveAction(req._id, "Approved")}>Approve</button>
                           <button className="btn btn-secondary leave-reject-btn" onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
                         </td>
@@ -255,22 +255,22 @@ export default function HRDashboard() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u._id}>
-                    <td className="user-name">
+                    <td className="user-name" data-label="Name">
                       <span className="user-avatar">{u.name?.charAt(0) || "U"}</span>
                       {u.name}
                     </td>
-                    <td>{u.email}</td>
-                    <td>
+                    <td data-label="Email">{u.email}</td>
+                    <td data-label="Role">
                       <span className={`role-badge role-${u.role}`}>{u.role}</span>
                     </td>
-                    <td>{u.managerId?.name || "-"}</td>
-                    <td>{u.department || "-"}</td>
-                    <td>
+                    <td data-label="Manager">{u.managerId?.name || "-"}</td>
+                    <td data-label="Department">{u.department || "-"}</td>
+                    <td data-label="Status">
                       <span className={`status-badge ${u.isActive === false ? "status-inactive" : "status-active"}`}>
                         {u.isActive === false ? "Inactive" : "Active"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       {user?.role === "admin" || u.role !== "admin" ? (
                         <button
                           className={`btn status-action-btn ${u.isActive === false ? "btn-primary" : "btn-secondary"}`}

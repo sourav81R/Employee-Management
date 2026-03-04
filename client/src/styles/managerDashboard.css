@@ -76,6 +76,7 @@
 
 .search-input {
   width: 100%;
+  min-width: 0;
   border: 1px solid #cfddd6;
   border-radius: 12px;
   background: #f8fcf9;
@@ -106,7 +107,7 @@
 
 .manager-leave-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 640px;
   border-collapse: collapse;
   border: 1px solid #d8e5de;
   border-radius: 12px;
@@ -150,7 +151,7 @@
 
 .team-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
@@ -221,6 +222,7 @@
   color: #334155;
   font-size: 0.84rem;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .info-value.paid {
@@ -301,5 +303,28 @@
 
   .info-value {
     text-align: left;
+  }
+
+  .manager-leave-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 640px) {
+  .team-stats,
+  .team-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .manager-btn-approve,
+  .manager-btn-reject {
+    width: 100%;
   }
 }

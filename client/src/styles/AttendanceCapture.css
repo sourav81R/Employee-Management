@@ -91,6 +91,7 @@
   margin: 5px 0;
   color: #4f6078;
   font-size: 0.88rem;
+  overflow-wrap: anywhere;
 }
 
 .checkout-controls {
@@ -116,5 +117,16 @@
 
   .controls .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .attendance-capture-container h2 {
+    font-size: 1.2rem;
+  }
+
+  .camera-feed,
+  .photo-preview {
+    max-height: 300px;
   }
 }

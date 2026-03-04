@@ -26,13 +26,13 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
         <tbody>
           {employees.map((emp) => (
             <tr key={emp._id}>
-              <td>{emp.employeeId}</td>
-              <td>{emp.name}</td>
-              <td>{emp.email}</td>
-              <td>{emp.position}</td>
-              <td>{emp.department}</td>
-              {isAdmin && <td>Rs {emp.salary ? emp.salary.toLocaleString("en-IN") : "-"}</td>}
-              <td>
+              <td data-label="Employee ID">{emp.employeeId}</td>
+              <td data-label="Name">{emp.name}</td>
+              <td data-label="Email">{emp.email}</td>
+              <td data-label="Position">{emp.position}</td>
+              <td data-label="Department">{emp.department}</td>
+              {isAdmin && <td data-label="Salary">Rs {emp.salary ? emp.salary.toLocaleString("en-IN") : "-"}</td>}
+              <td data-label="Last Paid">
                 {emp.lastPaid
                   ? new Date(emp.lastPaid).toLocaleString("en-IN", {
                       dateStyle: "medium",
@@ -41,7 +41,7 @@ export default function EmployeeList({ role, employees, onEdit, onDelete, onPay 
                   : "Not Paid Yet"}
               </td>
               {isAdmin && (
-                <td className="action-cell">
+                <td className="action-cell" data-label="Actions">
                   <div className="action-buttons">
                     <div className="action-btn-group">
                       <button onClick={() => onEdit(emp)} className="btn btn-edit action-btn">

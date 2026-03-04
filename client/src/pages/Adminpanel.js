@@ -474,19 +474,19 @@ export default function AdminPanel() {
               <tbody>
                 {pendingLeaves.map((req) => (
                   <tr key={req._id}>
-                    <td>{req.userId?.name}</td>
-                    <td>
+                    <td data-label="Requester">{req.userId?.name}</td>
+                    <td data-label="Role">
                       <span className={`role-badge role-${req.userId?.role}`}>{req.userId?.role}</span>
                     </td>
-                    <td>
+                    <td data-label="Dates">
                       {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
                     </td>
-                    <td>{req.reason}</td>
-                    <td>
+                    <td data-label="Reason">{req.reason}</td>
+                    <td data-label="Paid/Unpaid">
                       {req.paidDays || 0}/{req.unpaidDays || 0}
                       {req.salaryCut ? <span className="salary-cut-note">(Cut)</span> : null}
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <button className="btn btn-pay" onClick={() => handleLeaveAction(req._id, "Approved")}>
                         Approve
                       </button>
@@ -537,14 +537,14 @@ export default function AdminPanel() {
                 {leaveSummary.length > 0 ? (
                   leaveSummary.map((row) => (
                     <tr key={row.userId}>
-                      <td>{row.name}</td>
-                      <td>
+                      <td data-label="Name">{row.name}</td>
+                      <td data-label="Role">
                         <span className={`role-badge role-${row.role}`}>{row.role}</span>
                       </td>
-                      <td>{row.approvedPaidDays || 0}</td>
-                      <td>{row.approvedUnpaidDays || 0}</td>
-                      <td>{row.pendingPaidDays || 0}</td>
-                      <td>{row.pendingUnpaidDays || 0}</td>
+                      <td data-label="Approved Paid">{row.approvedPaidDays || 0}</td>
+                      <td data-label="Approved Unpaid">{row.approvedUnpaidDays || 0}</td>
+                      <td data-label="Pending Paid">{row.pendingPaidDays || 0}</td>
+                      <td data-label="Pending Unpaid">{row.pendingUnpaidDays || 0}</td>
                     </tr>
                   ))
                 ) : (
@@ -596,16 +596,16 @@ export default function AdminPanel() {
 
                     return (
                       <tr key={log._id}>
-                        <td>{userRef?.name || "N/A"}</td>
-                        <td>
+                        <td data-label="Name">{userRef?.name || "N/A"}</td>
+                        <td data-label="Role">
                           <span className={`role-badge role-${String(roleText).toLowerCase()}`}>{roleText}</span>
                         </td>
-                        <td>{userRef?.department || "N/A"}</td>
-                        <td>{dateText}</td>
-                        <td>{formatTime(checkIn)}</td>
-                        <td>{formatTime(checkOut)}</td>
-                        <td>{workedMinutes === null ? "Pending" : formatMinutes(workedMinutes)}</td>
-                        <td>{salaryCutText}</td>
+                        <td data-label="Department">{userRef?.department || "N/A"}</td>
+                        <td data-label="Date">{dateText}</td>
+                        <td data-label="Check-In">{formatTime(checkIn)}</td>
+                        <td data-label="Check-Out">{formatTime(checkOut)}</td>
+                        <td data-label="Duration">{workedMinutes === null ? "Pending" : formatMinutes(workedMinutes)}</td>
+                        <td data-label="Salary Cut / Day">{salaryCutText}</td>
                       </tr>
                     );
                   })

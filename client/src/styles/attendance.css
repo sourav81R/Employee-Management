@@ -6,6 +6,16 @@
   gap: 14px;
 }
 
+.attendance-single-column {
+  display: flex;
+  justify-content: center;
+}
+
+.attendance-single-card {
+  width: 100%;
+  max-width: 500px;
+}
+
 .attendance-card,
 .leave-card {
   border-radius: 20px;
@@ -85,6 +95,10 @@
   width: 100%;
 }
 
+.attendance-checkout-btn {
+  margin-top: 15px;
+}
+
 .status-present {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -92,6 +106,18 @@
   border-radius: 10px;
   text-align: center;
   color: #166534;
+}
+
+.attendance-inline-note {
+  font-weight: 700;
+  margin-top: 10px;
+  color: #4a5568;
+}
+
+.attendance-warning {
+  color: #c53030;
+  font-weight: 700;
+  margin-top: 8px;
 }
 
 .form-group {
@@ -174,6 +200,7 @@
   margin: 5px 0;
   font-size: 0.86rem;
   color: #475569;
+  overflow-wrap: anywhere;
 }
 
 .leave-status-badge {
@@ -271,5 +298,21 @@
   .leave-status-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .leave-filter-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .leave-filter-row select {
+    width: 100%;
+  }
+
+  .leave-request-actions .request-action-btn {
+    width: 100%;
+    text-align: center;
   }
 }
