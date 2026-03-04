@@ -9,10 +9,12 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showLoginCardImage, setShowLoginCardImage] = useState(true);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [circleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=300&fit=crop");
   const [decorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
+  const loginCardImage = "/employee-management.png";
 
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
@@ -162,6 +164,19 @@ export default function Login() {
                 Do not have an account? <Link to="/register">Create one</Link>
               </p>
             </div>
+
+            {loginCardImage && showLoginCardImage && (
+              <div className="login-card-illustration">
+                <img
+                  src={loginCardImage}
+                  alt="Employee management"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    setShowLoginCardImage(false);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
