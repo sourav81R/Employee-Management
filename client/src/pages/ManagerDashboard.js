@@ -20,7 +20,7 @@ export default function ManagerDashboard() {
 
     const role = user?.role?.toLowerCase?.();
     if (role !== "manager" && role !== "admin" && role !== "hr") {
-      alert("Access Denied!");
+      alert("Access denied.");
       return;
     }
     loadManagerData();
@@ -44,21 +44,13 @@ export default function ManagerDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const empData = await empRes.json();
-      if (Array.isArray(empData)) {
-        setTeamEmployees(empData);
-      } else {
-        setTeamEmployees([]);
-      }
+      setTeamEmployees(Array.isArray(empData) ? empData : []);
 
       const leaveRes = await fetch(buildApiUrl("/api/leave/pending"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const leaveData = await leaveRes.json();
-      if (Array.isArray(leaveData)) {
-        setPendingLeaves(leaveData);
-      } else {
-        setPendingLeaves([]);
-      }
+      setPendingLeaves(Array.isArray(leaveData) ? leaveData : []);
     } catch (err) {
       console.error("Load data error:", err);
     } finally {
@@ -96,7 +88,7 @@ export default function ManagerDashboard() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`Leave ${status.toLowerCase()} successfully`);
+        alert(`Leave ${status.toLowerCase()} successfully.`);
         loadManagerData();
       } else {
         alert(data.message || "Failed to update leave request");
@@ -118,7 +110,7 @@ export default function ManagerDashboard() {
       <div className="manager-dashboard">
         <div className="loading-container">
           <div className="loader"></div>
-          <p>Loading Team Data...</p>
+          <p>Loading team data...</p>
         </div>
       </div>
     );
@@ -128,34 +120,26 @@ export default function ManagerDashboard() {
     <div className="manager-dashboard">
       <div className="manager-header">
         <h1 className="manager-title">Team Management Dashboard</h1>
-        <p className="manager-subtitle">Manage team members and salary information</p>
+        <p className="manager-subtitle">Review team members, leave approvals, and salary status.</p>
       </div>
 
       {teamInfo && (
         <div className="team-stats">
           <div className="stat-card">
-            <div className="stat-content">
-              <p className="stat-label">Team Size</p>
-              <p className="stat-value">{teamInfo.teamSize}</p>
-            </div>
+            <p className="stat-label">Team Size</p>
+            <p className="stat-value">{teamInfo.teamSize}</p>
           </div>
           <div className="stat-card">
-            <div className="stat-content">
-              <p className="stat-label">Paid</p>
-              <p className="stat-value">{teamInfo.paid}</p>
-            </div>
+            <p className="stat-label">Paid</p>
+            <p className="stat-value">{teamInfo.paid}</p>
           </div>
           <div className="stat-card">
-            <div className="stat-content">
-              <p className="stat-label">Unpaid</p>
-              <p className="stat-value">{teamInfo.unpaid}</p>
-            </div>
+            <p className="stat-label">Unpaid</p>
+            <p className="stat-value">{teamInfo.unpaid}</p>
           </div>
           <div className="stat-card">
-            <div className="stat-content">
-              <p className="stat-label">Total Salary</p>
-              <p className="stat-value">${(teamInfo.totalSalary || 0).toLocaleString()}</p>
-            </div>
+            <p className="stat-label">Total Salary</p>
+            <p className="stat-value">${(teamInfo.totalSalary || 0).toLocaleString()}</p>
           </div>
         </div>
       )}
@@ -194,9 +178,7 @@ export default function ManagerDashboard() {
                   {pendingLeaves.map((req) => (
                     <tr key={req._id}>
                       <td>{req.userId?.name || "N/A"}</td>
-                      <td>
-                        {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
-                      </td>
+                      <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
                       <td>{req.reason}</td>
                       <td>{req.paidDays || 0}/{req.unpaidDays || 0}</td>
                       <td>
@@ -214,7 +196,7 @@ export default function ManagerDashboard() {
             </div>
           ) : (
             <div className="no-data-container">
-              <p className="no-data-text">No pending leave requests</p>
+              <p className="no-data-text">No pending leave requests.</p>
             </div>
           )}
         </div>
@@ -237,23 +219,23 @@ export default function ManagerDashboard() {
                   </div>
                   <div className="card-body">
                     <div className="info-row">
-                      <span className="info-label">Email:</span>
+                      <span className="info-label">Email</span>
                       <span className="info-value">{emp.email}</span>
                     </div>
                     <div className="info-row">
-                      <span className="info-label">Position:</span>
+                      <span className="info-label">Position</span>
                       <span className="info-value">{emp.position || "-"}</span>
                     </div>
                     <div className="info-row">
-                      <span className="info-label">Department:</span>
+                      <span className="info-label">Department</span>
                       <span className="info-value">{emp.department || "-"}</span>
                     </div>
                     <div className="info-row">
-                      <span className="info-label">Salary:</span>
+                      <span className="info-label">Salary</span>
                       <span className="info-value">${(emp.salary || 0).toLocaleString()}</span>
                     </div>
                     <div className="info-row">
-                      <span className="info-label">Last Paid:</span>
+                      <span className="info-label">Last Paid</span>
                       <span className={`info-value ${emp.lastPaid ? "paid" : "unpaid"}`}>
                         {emp.lastPaid ? new Date(emp.lastPaid).toLocaleDateString() : "Not paid"}
                       </span>
@@ -261,13 +243,9 @@ export default function ManagerDashboard() {
                   </div>
                   <div className="card-footer">
                     {canPaySalary ? (
-                      <button className="btn btn-pay" onClick={() => handlePay(emp._id)}>
-                        Pay Salary
-                      </button>
+                      <button className="btn btn-pay" onClick={() => handlePay(emp._id)}>Pay Salary</button>
                     ) : (
-                      <button className="btn btn-pay" disabled>
-                        View Only
-                      </button>
+                      <button className="btn btn-pay" disabled>View Only</button>
                     )}
                   </div>
                 </div>
@@ -275,7 +253,7 @@ export default function ManagerDashboard() {
             </div>
           ) : (
             <div className="no-data-container">
-              <p className="no-data-text">No team members found</p>
+              <p className="no-data-text">No team members found.</p>
             </div>
           )}
         </div>

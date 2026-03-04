@@ -446,7 +446,7 @@ export default function HomeAssistant({ userName }) {
       </div>
 
       <form className="assistant-composer" onSubmit={onSubmit}>
-        <span className="assistant-composer-mark" aria-hidden="true">✦</span>
+        <span className="assistant-composer-mark" aria-hidden="true">*</span>
         <input
           type="text"
           value={prompt}
@@ -462,3 +462,4 @@ export default function HomeAssistant({ userName }) {
     </section>
   );
 }
+

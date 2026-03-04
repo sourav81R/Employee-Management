@@ -1,4 +1,3 @@
-// src/pages/HRDashboard.js
 import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { buildApiUrl } from "../utils/apiBase";
@@ -11,18 +10,16 @@ export default function HRDashboard() {
   const [users, setUsers] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedManager, setSelectedManager] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignData, setAssignData] = useState({ userId: "", managerId: "" });
 
-  // Fallback to localStorage if context token is missing or invalid
-  const token = (contextToken && contextToken !== "undefined" && contextToken !== "null") 
-    ? contextToken 
+  const token = (contextToken && contextToken !== "undefined" && contextToken !== "null")
+    ? contextToken
     : localStorage.getItem("token");
 
   useEffect(() => {
     if (user?.role?.toLowerCase?.() !== "hr" && user?.role?.toLowerCase?.() !== "admin") {
-      alert("Access Denied!");
+      alert("Access denied.");
       return;
     }
     loadData();
@@ -30,39 +27,30 @@ export default function HRDashboard() {
 
   async function loadData() {
     try {
-      // Fetch stats
       const statsRes = await fetch(buildApiUrl("/api/hr/stats"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const statsData = await statsRes.json();
       setStats(statsData);
 
-      // Fetch managers
       const managersRes = await fetch(buildApiUrl("/api/managers"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const managersData = await managersRes.json();
-      if (Array.isArray(managersData)) {
-        setManagers(managersData);
-      }
+      if (Array.isArray(managersData)) setManagers(managersData);
 
-      // Fetch all users
       const usersRes = await fetch(buildApiUrl("/api/users"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const usersData = await usersRes.json();
-      if (Array.isArray(usersData)) {
-        setUsers(usersData);
-      }
+      if (Array.isArray(usersData)) setUsers(usersData);
 
-      // Fetch pending leave requests
       const leaveRes = await fetch(buildApiUrl("/api/leave/pending"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const leaveData = await leaveRes.json();
       if (Array.isArray(leaveData)) {
         const isHrUser = user?.role?.toLowerCase?.() === "hr";
-        // HR should not act on HR leave requests; admin can.
         setLeaveRequests(isHrUser ? leaveData.filter((req) => req.userId?.role !== "hr") : leaveData);
       }
     } catch (err) {
@@ -85,7 +73,7 @@ export default function HRDashboard() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Manager assigned successfully!");
+        alert("Manager assigned successfully.");
         loadData();
         setShowAssignModal(false);
         setAssignData({ userId: "", managerId: "" });
@@ -109,7 +97,7 @@ export default function HRDashboard() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        alert(`Leave ${status.toLowerCase()} successfully!`);
+        alert(`Leave ${status.toLowerCase()} successfully.`);
         loadData();
       } else {
         alert("Failed to update leave status");
@@ -150,7 +138,7 @@ export default function HRDashboard() {
       <div className="hr-dashboard">
         <div className="loading-container">
           <div className="loader"></div>
-          <p>Loading HR Dashboard...</p>
+          <p>Loading HR dashboard...</p>
         </div>
       </div>
     );
@@ -158,53 +146,36 @@ export default function HRDashboard() {
 
   return (
     <div className="hr-dashboard">
-      {/* Header */}
       <div className="hr-header">
-        <h1 className="hr-title">
-          <span className="hr-icon">👔</span> HR Management Dashboard
-        </h1>
-        <p className="hr-subtitle">Manage managers, employees, and organizational structure</p>
+        <h1 className="hr-title">HR Management Dashboard</h1>
+        <p className="hr-subtitle">Manage users, managers, leaves, and organization status.</p>
       </div>
 
-      {/* Statistics Cards */}
       {stats && (
         <div className="stats-grid">
           <div className="stat-card">
-            <span className="stat-icon">👥</span>
-            <div className="stat-content">
-              <p className="stat-label">Total Users</p>
-              <p className="stat-value">{stats.totalUsers}</p>
-            </div>
+            <p className="stat-label">Total Users</p>
+            <p className="stat-value">{stats.totalUsers}</p>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">👔</span>
-            <div className="stat-content">
-              <p className="stat-label">Managers</p>
-              <p className="stat-value">{stats.managers}</p>
-            </div>
+            <p className="stat-label">Managers</p>
+            <p className="stat-value">{stats.managers}</p>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">📊</span>
-            <div className="stat-content">
-              <p className="stat-label">Employees</p>
-              <p className="stat-value">{stats.employees}</p>
-            </div>
+            <p className="stat-label">Employees</p>
+            <p className="stat-value">{stats.employees}</p>
           </div>
           <div className="stat-card">
-            <span className="stat-icon">🏢</span>
-            <div className="stat-content">
-              <p className="stat-label">Departments</p>
-              <p className="stat-value">{stats.departments}</p>
-            </div>
+            <p className="stat-label">Departments</p>
+            <p className="stat-value">{stats.departments}</p>
           </div>
         </div>
       )}
 
       <div className="hr-content">
-        {/* Leave Requests Section */}
         <div className="section">
           <div className="section-header">
-            <h2>📅 Pending Leave Requests</h2>
+            <h2>Pending Leave Requests</h2>
           </div>
           <div className="leave-requests-list">
             {leaveRequests.length > 0 ? (
@@ -225,13 +196,10 @@ export default function HRDashboard() {
                         <td>{req.userId?.name} ({req.userId?.email})</td>
                         <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
                         <td>{req.reason}</td>
-                        <td>
-                          {req.paidDays || 0}/{req.unpaidDays || 0}
-                          {req.salaryCut ? <span style={{ color: "#c53030", marginLeft: "6px" }}>(Cut)</span> : null}
-                        </td>
+                        <td>{req.paidDays || 0}/{req.unpaidDays || 0}{req.salaryCut ? <span className="salary-cut-note">(Cut)</span> : null}</td>
                         <td>
                           <button className="btn btn-primary" onClick={() => handleLeaveAction(req._id, "Approved")}>Approve</button>
-                          <button className="btn btn-secondary" style={{marginLeft: '5px'}} onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
+                          <button className="btn btn-secondary leave-reject-btn" onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
                         </td>
                       </tr>
                     ))}
@@ -239,17 +207,16 @@ export default function HRDashboard() {
                 </table>
               </div>
             ) : (
-              <p className="no-data">No pending leave requests</p>
+              <p className="no-data">No pending leave requests.</p>
             )}
           </div>
         </div>
 
-        {/* Managers Section */}
         <div className="section">
           <div className="section-header">
-            <h2>👔 Managers</h2>
+            <h2>Managers</h2>
             <button className="btn btn-primary" onClick={() => setShowAssignModal(true)}>
-              ➕ Assign Manager
+              Assign Manager
             </button>
           </div>
           <div className="managers-grid">
@@ -259,22 +226,18 @@ export default function HRDashboard() {
                   <div className="manager-avatar">{manager.name?.charAt(0) || "M"}</div>
                   <h3>{manager.name}</h3>
                   <p className="manager-email">{manager.email}</p>
-                  <p className="manager-dept">{manager.department || "No department"}</p>
-                  <button className="btn btn-secondary" onClick={() => setSelectedManager(manager._id)}>
-                    View Team
-                  </button>
+                  <p className="manager-dept">{manager.department || "No department assigned"}</p>
                 </div>
               ))
             ) : (
-              <p className="no-data">No managers assigned</p>
+              <p className="no-data">No managers assigned.</p>
             )}
           </div>
         </div>
 
-        {/* Users Section */}
         <div className="section">
           <div className="section-header">
-            <h2>👥 All Users</h2>
+            <h2>All Users</h2>
           </div>
           <div className="users-table-wrapper">
             <table className="users-table">
@@ -300,15 +263,15 @@ export default function HRDashboard() {
                     <td>
                       <span className={`role-badge role-${u.role}`}>{u.role}</span>
                     </td>
-                    <td>{u.managerId?.name || "—"}</td>
-                    <td>{u.department || "—"}</td>
+                    <td>{u.managerId?.name || "-"}</td>
+                    <td>{u.department || "-"}</td>
                     <td>
                       <span className={`status-badge ${u.isActive === false ? "status-inactive" : "status-active"}`}>
                         {u.isActive === false ? "Inactive" : "Active"}
                       </span>
                     </td>
                     <td>
-                      {(user?.role === "admin" || u.role !== "admin") ? (
+                      {user?.role === "admin" || u.role !== "admin" ? (
                         <button
                           className={`btn status-action-btn ${u.isActive === false ? "btn-primary" : "btn-secondary"}`}
                           onClick={() => handleToggleUserStatus(u)}
@@ -316,7 +279,7 @@ export default function HRDashboard() {
                           {u.isActive === false ? "Activate" : "Deactivate"}
                         </button>
                       ) : (
-                        <span style={{ color: "#64748b" }}>Restricted</span>
+                        <span className="table-note">Restricted</span>
                       )}
                     </td>
                   </tr>
@@ -327,13 +290,12 @@ export default function HRDashboard() {
         </div>
       </div>
 
-      {/* Assign Manager Modal */}
       {showAssignModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
               <h2>Assign Manager to User</h2>
-              <button className="modal-close" onClick={() => setShowAssignModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowAssignModal(false)}>x</button>
             </div>
             <form onSubmit={handleAssignManager} className="modal-form">
               <div className="form-group">
@@ -344,7 +306,7 @@ export default function HRDashboard() {
                   required
                 >
                   <option value="">Choose a user...</option>
-                  {users.filter(u => u.role !== "admin").map((u) => (
+                  {users.filter((u) => u.role !== "admin").map((u) => (
                     <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
                   ))}
                 </select>

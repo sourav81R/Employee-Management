@@ -384,7 +384,7 @@ export default function AttendanceCapture() {
 
   return (
     <div className="attendance-capture-container">
-      <h2>Mark Your Attendance</h2>
+      <h2>Mark Attendance</h2>
       {error && <p className="error-message">{error}</p>}
       {message && !error && <p className="info-message">{message}</p>}
 
@@ -407,17 +407,17 @@ export default function AttendanceCapture() {
 
       {!hasCheckedIn && (
         <>
-          <div className="camera-feed-wrapper" style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+          <div className="camera-feed-wrapper">
             {!photoData && (
-              <video ref={videoRef} autoPlay playsInline muted className="camera-feed" style={{ maxWidth: "100%", borderRadius: "8px" }}></video>
+              <video ref={videoRef} autoPlay playsInline muted className="camera-feed"></video>
             )}
-            <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
+            <canvas ref={canvasRef} className="hidden-canvas"></canvas>
             {photoData && (
-              <img src={photoData} alt="Captured Attendance" className="photo-preview" style={{ maxWidth: "100%", borderRadius: "8px" }} />
+              <img src={photoData} alt="Captured attendance" className="photo-preview" />
             )}
           </div>
 
-          <div className="controls" style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center", marginTop: "15px" }}>
+          <div className="controls">
             <button
               type="button"
               onClick={startCamera}
@@ -456,7 +456,7 @@ export default function AttendanceCapture() {
               accept="image/*"
               capture="user"
               onChange={handleFileChange}
-              style={{ display: "none" }}
+              className="hidden-file-input"
             />
             {photoData && (
               <button type="button" onClick={clearPhoto} disabled={loading} className="btn btn-danger">

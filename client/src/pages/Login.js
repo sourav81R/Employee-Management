@@ -1,4 +1,3 @@
-// src/pages/Login.js
 import React, { useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
@@ -12,8 +11,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [circleImage, setCircleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=300&fit=crop");
-  const [decorativeImage, setDecorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
+  const [circleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=300&fit=crop");
+  const [decorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
 
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
@@ -25,40 +24,29 @@ export default function Login() {
 
     try {
       const res = await axios.post(buildApiUrl("/api/auth/login"), { email, password });
-
       const { token, user } = res.data;
 
       if (!user || !token) {
-        throw new Error("Invalid server response — missing token or user");
+        throw new Error("Invalid server response: missing token or user");
       }
 
-      // Save token + user in auth context/localStorage
       login(user, token);
-
-      // Set default Authorization header for future axios requests
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // Clear sensitive data from state
+      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
       setPassword("");
 
-      // Redirect depending on role
       const normalizedRole = String(user.role || "").trim().toLowerCase();
       if (normalizedRole === "admin") navigate("/admin");
       else if (normalizedRole === "hr") navigate("/hr");
       else if (normalizedRole === "manager") navigate("/manager");
       else navigate("/");
-
     } catch (err) {
-      console.error("Login error:", err);
-
       const message =
         err.response?.status === 405
-          ? "Wrong API endpoint/method. Check REACT_APP_API_BASE_URL points to your Render backend."
-          :
-        err.response?.data?.message ??
-        (err.code === "ERR_NETWORK"
-          ? "Server unreachable — make sure the backend is running"
-          : "Invalid email or password");
+          ? "Wrong API endpoint or method. Check REACT_APP_API_BASE_URL."
+          : err.response?.data?.message ??
+            (err.code === "ERR_NETWORK"
+              ? "Server unreachable. Make sure backend is running."
+              : "Invalid email or password");
 
       setError(message);
     } finally {
@@ -69,54 +57,44 @@ export default function Login() {
   return (
     <div className="login-container">
       <div className="login-wrapper">
-        {/* Left Side - Branding */}
         <div className="login-branding">
           <div className="branding-content">
             <div className="logo-circle">
               {circleImage ? (
-                <img 
-                  src={circleImage} 
-                  alt="Employee Management" 
-                  className="circle-image"
-                />
+                <img src={circleImage} alt="Employee Management" className="circle-image" />
               ) : (
                 <i className="fa-solid fa-building"></i>
               )}
             </div>
-            <h1>Employee Management</h1>
-            <p>Manage your workforce with ease</p>
+            <h1>EmployeeHub</h1>
+            <p>Organize workforce operations with precision.</p>
             <div className="features">
               <div className="feature-item">
                 <i className="fa-solid fa-check"></i>
-                <span>Secure Authentication</span>
+                <span>Secure authentication</span>
               </div>
               <div className="feature-item">
                 <i className="fa-solid fa-check"></i>
-                <span>Real-time Dashboard</span>
+                <span>Unified attendance and leave workflows</span>
               </div>
               <div className="feature-item">
                 <i className="fa-solid fa-check"></i>
-                <span>Salary Management</span>
+                <span>Role-based team management</span>
               </div>
             </div>
             {decorativeImage && (
               <div className="decorative-image-container">
-                <img 
-                  src={decorativeImage} 
-                  alt="Employee Management" 
-                  className="decorative-image"
-                />
+                <img src={decorativeImage} alt="Workspace collaboration" className="decorative-image" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
         <div className="login-form-wrapper">
           <div className="login-card">
             <div className="form-header">
               <h2>Welcome Back</h2>
-              <p>Sign in to your account</p>
+              <p>Sign in to continue</p>
             </div>
 
             {error && (
@@ -133,7 +111,7 @@ export default function Login() {
                   <input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -148,7 +126,7 @@ export default function Login() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     className="password-input"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -164,11 +142,7 @@ export default function Login() {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                className="login-btn" 
-                disabled={loading}
-              >
+              <button type="submit" className="login-btn" disabled={loading}>
                 {loading ? (
                   <>
                     <i className="fa-solid fa-spinner fa-spin"></i>
@@ -184,7 +158,9 @@ export default function Login() {
             </form>
 
             <div className="form-footer">
-              <p>Don't have an account? <Link to="/register">Sign up here</Link></p>
+              <p>
+                Do not have an account? <Link to="/register">Create one</Link>
+              </p>
             </div>
           </div>
         </div>

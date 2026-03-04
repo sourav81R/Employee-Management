@@ -5,7 +5,7 @@ import { buildApiUrl } from "../utils/apiBase";
 import "./Register.css";
 
 export default function Register() {
-  const [name, setName] = useState("");   
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,54 +14,46 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [circleImage, setCircleImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=200&q=80");
   const [decorativeImage, setDecorativeImage] = useState("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
+
   const navigate = useNavigate();
   const unsplashAccessKey = process.env.REACT_APP_UNSPLASH_ACCESS_KEY;
 
-  // Fetch employee management image from API
   useEffect(() => {
     const fetchImage = async () => {
       if (!unsplashAccessKey) return;
       try {
-        const response = await axios.get(
-          "https://api.unsplash.com/search/photos",
-          {
-            params: {
-              query: "employee management team business",
-              per_page: 1,
-              client_id: unsplashAccessKey,
-            },
-          }
-        );
-        if (response.data.results && response.data.results.length > 0) {
+        const response = await axios.get("https://api.unsplash.com/search/photos", {
+          params: {
+            query: "employee management team business",
+            per_page: 1,
+            client_id: unsplashAccessKey,
+          },
+        });
+        if (response.data.results?.length > 0) {
           setCircleImage(response.data.results[0].urls.regular);
         }
       } catch (_err) {
-        // Keep default image if Unsplash fetch fails
+        // Keep fallback
       }
     };
     fetchImage();
   }, [unsplashAccessKey]);
 
-  // Fetch decorative image
   useEffect(() => {
     const fetchDecorativeImage = async () => {
       if (!unsplashAccessKey) return;
       try {
-        const response = await axios.get(
-          "https://api.unsplash.com/search/photos",
-          {
-            params: {
-              query: "office team meeting collaboration professional",
-              per_page: 1,
-              client_id: unsplashAccessKey,
-            },
-          }
-        );
-        if (response.data.results && response.data.results.length > 0) {
+        const response = await axios.get("https://api.unsplash.com/search/photos", {
+          params: {
+            query: "office team meeting collaboration professional",
+            per_page: 1,
+            client_id: unsplashAccessKey,
+          },
+        });
+        if (response.data.results?.length > 0) {
           setDecorativeImage(response.data.results[0].urls.regular);
         }
       } catch (_err) {
-        // Use fallback image if API fails
         setDecorativeImage("https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80");
       }
     };
@@ -81,12 +73,12 @@ export default function Register() {
         role,
       });
 
-      alert("✅ Registration successful, now login!");
+      alert("Registration successful. Please sign in.");
       navigate("/login");
     } catch (err) {
       const message =
         err.response?.status === 405
-          ? "Wrong API endpoint/method. Check REACT_APP_API_BASE_URL points to your Render backend."
+          ? "Wrong API endpoint or method. Check REACT_APP_API_BASE_URL."
           : err.response?.data?.message || "Registration failed";
       setError(message);
     } finally {
@@ -97,54 +89,44 @@ export default function Register() {
   return (
     <div className="register-container">
       <div className="register-wrapper">
-        {/* Left Side - Info */}
         <div className="register-info">
           <div className="info-content">
             <div className="logo-circle">
               {circleImage ? (
-                <img 
-                  src={circleImage} 
-                  alt="Employee Management" 
-                  className="circle-image"
-                />
+                <img src={circleImage} alt="EmployeeHub" className="circle-image" />
               ) : (
                 <i className="fa-solid fa-user-plus"></i>
               )}
             </div>
-            <h1>Join Our Team</h1>
-            <p>Create an account and start managing employees</p>
+            <h1>Create Your Workspace</h1>
+            <p>Set up your account and start managing your team</p>
             <div className="info-features">
               <div className="info-item">
                 <i className="fa-solid fa-rocket"></i>
-                <span>Quick Setup</span>
+                <span>Fast setup</span>
               </div>
               <div className="info-item">
                 <i className="fa-solid fa-shield"></i>
-                <span>Secure & Reliable</span>
+                <span>Secure role-based access</span>
               </div>
               <div className="info-item">
-                <i className="fa-solid fa-headset"></i>
-                <span>24/7 Support</span>
+                <i className="fa-solid fa-briefcase"></i>
+                <span>HR and team workflows included</span>
               </div>
             </div>
             {decorativeImage && (
               <div className="decorative-image-container">
-                <img 
-                  src={decorativeImage} 
-                  alt="Employee Management" 
-                  className="decorative-image"
-                />
+                <img src={decorativeImage} alt="Team collaboration" className="decorative-image" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Side - Form */}
         <div className="register-form-wrapper">
           <div className="register-card">
             <div className="form-header">
               <h2>Create Account</h2>
-              <p>Get started in minutes</p>
+              <p>Get started in a minute</p>
             </div>
 
             {error && (
@@ -177,7 +159,7 @@ export default function Register() {
                   <input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -193,7 +175,7 @@ export default function Register() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     className="password-input"
-                    placeholder="••••••••"
+                    placeholder="Choose a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -211,9 +193,7 @@ export default function Register() {
 
               <div className="form-group">
                 <label htmlFor="role">Select Role</label>
-                <div className="role-info">
-                  <p className="role-hint">Choose the role for this account.</p>
-                </div>
+                <p className="role-hint">Choose the right permission scope for this account.</p>
                 <div className="role-options">
                   <label className="role-option">
                     <input
@@ -224,7 +204,7 @@ export default function Register() {
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
-                      <span className="role-icon">👨‍💼</span>
+                      <span className="role-icon">EM</span>
                       <span className="role-text">Employee</span>
                       <span className="role-desc">Individual contributor</span>
                     </span>
@@ -238,9 +218,9 @@ export default function Register() {
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
-                      <span className="role-icon">👔</span>
+                      <span className="role-icon">MG</span>
                       <span className="role-text">Manager</span>
-                      <span className="role-desc">Manage team & salary</span>
+                      <span className="role-desc">Team and salary approvals</span>
                     </span>
                   </label>
                   <label className="role-option">
@@ -252,9 +232,9 @@ export default function Register() {
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
-                      <span className="role-icon">👨‍💼</span>
+                      <span className="role-icon">HR</span>
                       <span className="role-text">HR</span>
-                      <span className="role-desc">HR operations & reporting</span>
+                      <span className="role-desc">Workforce operations</span>
                     </span>
                   </label>
                   <label className="role-option">
@@ -266,19 +246,15 @@ export default function Register() {
                       onChange={(e) => setRole(e.target.value)}
                     />
                     <span className="role-label">
-                      <span className="role-icon">🔐</span>
+                      <span className="role-icon">AD</span>
                       <span className="role-text">Admin</span>
-                      <span className="role-desc">Full system access</span>
+                      <span className="role-desc">Full platform control</span>
                     </span>
                   </label>
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                className="register-btn" 
-                disabled={loading}
-              >
+              <button type="submit" className="register-btn" disabled={loading}>
                 {loading ? (
                   <>
                     <i className="fa-solid fa-spinner fa-spin"></i>
@@ -294,7 +270,9 @@ export default function Register() {
             </form>
 
             <div className="form-footer">
-              <p>Already have an account? <Link to="/login">Sign in here</Link></p>
+              <p>
+                Already have an account? <Link to="/login">Sign in</Link>
+              </p>
             </div>
           </div>
         </div>

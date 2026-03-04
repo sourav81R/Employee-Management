@@ -1,80 +1,83 @@
 .company-page {
   min-height: calc(100vh - 220px);
-  padding: 34px 16px 22px;
-  background: linear-gradient(135deg, #eef2ff 0%, #ede8fb 100%);
+  padding: 14px 0 8px;
 }
 
 .company-page-card {
   max-width: 980px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 20px;
-  padding: 34px;
-  box-shadow: 0 16px 35px rgba(66, 82, 136, 0.14);
+  border-radius: 22px;
+  border: 1px solid #d6e2db;
+  background:
+    radial-gradient(circle at 8% -20%, rgba(15, 118, 110, 0.14), transparent 42%),
+    radial-gradient(circle at 92% 0%, rgba(221, 107, 32, 0.12), transparent 40%),
+    linear-gradient(145deg, #ffffff 0%, #f8fcf9 68%, #fef8f2 100%);
+  box-shadow: 0 16px 34px rgba(10, 30, 42, 0.1);
+  padding: 28px;
 }
 
 .company-page-card h1 {
-  margin: 0 0 12px;
-  color: #102849;
-  font-size: clamp(1.7rem, 2.2vw, 2.35rem);
+  margin: 0 0 10px;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
 }
 
 .company-page-intro {
   margin: 0;
-  color: #445975;
-  line-height: 1.65;
-  font-size: 1.04rem;
+  color: #516079;
+  line-height: 1.64;
 }
 
 .company-page-sections {
-  margin-top: 24px;
+  margin-top: 18px;
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .company-page-section {
-  padding: 16px;
-  border: 1px solid rgba(16, 40, 73, 0.14);
+  padding: 13px;
+  border: 1px solid #d6e2db;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+  background: #fff;
 }
 
 .company-page-section h2 {
-  margin: 0 0 6px;
-  color: #102849;
-  font-size: 1.12rem;
+  margin: 0 0 5px;
+  font-size: 1rem;
 }
 
 .company-page-section p {
   margin: 0;
-  color: #3f5370;
-  line-height: 1.58;
+  color: #4a5d74;
+  line-height: 1.54;
+  font-size: 0.92rem;
 }
 
 .company-page-actions {
-  margin-top: 22px;
+  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .company-page-actions a {
   text-decoration: none;
-  color: #102849;
-  border: 1px solid rgba(16, 40, 73, 0.22);
-  background: #edf2ff;
-  padding: 9px 12px;
-  border-radius: 10px;
-  font-weight: 600;
+  color: #0f5f58;
+  border: 1px solid #bcd8cf;
+  background: #f3faf7;
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.82rem;
 }
 
 .company-page-actions a:hover {
-  color: #ff5a3d;
+  border-color: #0f766e;
+  color: #0f766e;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 740px) {
   .company-page-card {
-    padding: 22px;
+    border-radius: 16px;
+    padding: 16px 12px;
   }
 }

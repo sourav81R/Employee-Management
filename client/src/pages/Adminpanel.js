@@ -33,7 +33,6 @@ export default function AdminPanel() {
   const [search, setSearch] = useState("");
   const role = user?.role;
 
-  // ✅ Load employees on mount
   useEffect(() => {
     if (!token || !role) return;
 
@@ -61,12 +60,10 @@ export default function AdminPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const users = await res.json();
-      
+
       if (Array.isArray(users)) {
-        // Filter HR and Manager users
-        const hrs = users.filter(u => u.role?.toLowerCase?.() === "hr");
-        const managers = users.filter(u => u.role?.toLowerCase?.() === "manager");
-        
+        const hrs = users.filter((u) => u.role?.toLowerCase?.() === "hr");
+        const managers = users.filter((u) => u.role?.toLowerCase?.() === "manager");
         setHrUsers(hrs);
         setManagerUsers(managers);
       }
@@ -81,9 +78,7 @@ export default function AdminPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setAttendanceLog(data);
-      }
+      if (Array.isArray(data)) setAttendanceLog(data);
     } catch (err) {
       console.error("Failed to fetch attendance:", err);
     }
@@ -95,10 +90,7 @@ export default function AdminPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (Array.isArray(data)) {
-        // Admin sees all, but specifically needs to handle HR requests
-        setPendingLeaves(data);
-      }
+      if (Array.isArray(data)) setPendingLeaves(data);
     } catch (err) {
       console.error("Failed to fetch pending leaves:", err);
     }
@@ -190,7 +182,7 @@ export default function AdminPanel() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        alert(`Leave ${status.toLowerCase()} successfully!`);
+        alert(`Leave ${status.toLowerCase()} successfully.`);
         loadPendingLeaves();
       } else {
         const data = await res.json();
@@ -265,8 +257,8 @@ export default function AdminPanel() {
   }
 
   const filteredEmployees = employees.filter((emp) =>
-  (emp.name?.toLowerCase() || "").includes(search.toLowerCase())
-);
+    (emp.name?.toLowerCase() || "").includes(search.toLowerCase())
+  );
 
   const salaryByEmail = employees.reduce((acc, emp) => {
     const email = (emp?.email || "").toLowerCase().trim();
@@ -304,21 +296,16 @@ export default function AdminPanel() {
       <div className="dashboard-header">
         <div className="header-content">
           <h1 className="dashboard-title">
-            <span className="title-icon">📊</span>
             {role?.toLowerCase() === "admin" ? "Admin Dashboard" : "Employee Directory"}
           </h1>
-          <p className="header-subtitle">Manage employees and salary information</p>
+          <p className="header-subtitle">Manage employee records, leaves, attendance, and salaries.</p>
         </div>
       </div>
 
-      {/* 👇 Only admins can add/update/delete employees */}
       {role?.toLowerCase() === "admin" && (
         <div className="dashboard-section">
           <div className="section-header">
-            <h2 className="section-title">
-              <span className="icon">➕</span>
-              {editing ? "Update Employee" : "Add New Employee"}
-            </h2>
+            <h2 className="section-title">{editing ? "Update Employee" : "Add New Employee"}</h2>
           </div>
           <form onSubmit={handleSubmit} className="employee-form admin-form">
             <div className="form-grid">
@@ -388,15 +375,11 @@ export default function AdminPanel() {
             </div>
             <div className="form-buttons">
               <button type="submit" className="btn btn-primary btn-lg">
-                {editing ? "✓ Update Employee" : "✓ Add Employee"}
+                {editing ? "Update Employee" : "Add Employee"}
               </button>
               {editing && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="btn btn-secondary btn-lg"
-                >
-                  ✕ Cancel
+                <button type="button" onClick={resetForm} className="btn btn-secondary btn-lg">
+                  Cancel
                 </button>
               )}
             </div>
@@ -404,11 +387,9 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Search Box (works for both user & admin) */}
       <div className="dashboard-section">
         <div className="search-container">
           <div className="search-wrapper">
-            <span className="search-icon">🔍</span>
             <input
               type="text"
               placeholder="Search employee by name..."
@@ -417,81 +398,66 @@ export default function AdminPanel() {
               className="search-input"
             />
           </div>
-          <button
-            className="btn btn-primary btn-search"
-            onClick={() => setSearch(search.trim())}
-          >
+          <button className="btn btn-primary btn-search" onClick={() => setSearch(search.trim())}>
             Search
           </button>
         </div>
       </div>
 
-      {/* HR Users Section */}
       <div className="dashboard-section">
         <div className="section-header">
-          <h2 className="section-title">
-            <span className="icon">👔</span>
-            HR Users ({hrUsers.length})
-          </h2>
+          <h2 className="section-title">HR Users ({hrUsers.length})</h2>
         </div>
         <div className="users-grid">
           {hrUsers.length > 0 ? (
-            hrUsers.map((user) => (
-              <div key={user._id} className="user-card hr-user-card">
+            hrUsers.map((targetUser) => (
+              <div key={targetUser._id} className="user-card hr-user-card">
                 <div className="user-header">
-                  <span className="user-badge hr-badge">👔 HR</span>
+                  <span className="user-badge hr-badge">HR</span>
                 </div>
                 <div className="user-info">
-                  <h3 className="user-name">{user.name}</h3>
-                  <p className="user-email">📧 {user.email}</p>
-                  {user.department && <p className="user-dept">🏢 {user.department}</p>}
-                  {user.phoneNumber && <p className="user-phone">📱 {user.phoneNumber}</p>}
+                  <h3 className="user-name">{targetUser.name}</h3>
+                  <p className="user-email">{targetUser.email}</p>
+                  {targetUser.department && <p className="user-dept">{targetUser.department}</p>}
+                  {targetUser.phoneNumber && <p className="user-phone">{targetUser.phoneNumber}</p>}
                 </div>
               </div>
             ))
           ) : (
-            <div className="no-data-message">No HR users found</div>
+            <div className="no-data-message">No HR users found.</div>
           )}
         </div>
       </div>
 
-      {/* Manager Users Section */}
       <div className="dashboard-section">
         <div className="section-header">
-          <h2 className="section-title">
-            <span className="icon">🎯</span>
-            Manager Users ({managerUsers.length})
-          </h2>
+          <h2 className="section-title">Manager Users ({managerUsers.length})</h2>
         </div>
         <div className="users-grid">
           {managerUsers.length > 0 ? (
-            managerUsers.map((user) => (
-              <div key={user._id} className="user-card manager-user-card">
+            managerUsers.map((targetUser) => (
+              <div key={targetUser._id} className="user-card manager-user-card">
                 <div className="user-header">
-                  <span className="user-badge manager-badge">🎯 Manager</span>
+                  <span className="user-badge manager-badge">Manager</span>
                 </div>
                 <div className="user-info">
-                  <h3 className="user-name">{user.name}</h3>
-                  <p className="user-email">📧 {user.email}</p>
-                  {user.department && <p className="user-dept">🏢 {user.department}</p>}
-                  {user.phoneNumber && <p className="user-phone">📱 {user.phoneNumber}</p>}
+                  <h3 className="user-name">{targetUser.name}</h3>
+                  <p className="user-email">{targetUser.email}</p>
+                  {targetUser.department && <p className="user-dept">{targetUser.department}</p>}
+                  {targetUser.phoneNumber && <p className="user-phone">{targetUser.phoneNumber}</p>}
                 </div>
               </div>
             ))
           ) : (
-            <div className="no-data-message">No manager users found</div>
+            <div className="no-data-message">No manager users found.</div>
           )}
         </div>
       </div>
 
-      {/* Pending Leave Requests Section (Admin Only) */}
       {role?.toLowerCase() === "admin" && (
         <div className="dashboard-section">
           <div className="section-header">
-            <h2 className="section-title">
-              <span className="icon">📅</span>
-              Pending Leave Requests (HR & Staff)
-            </h2>
+            <h2 className="section-title">Pending Leave Requests</h2>
           </div>
           <div className="table-wrapper">
             <table className="employee-table">
@@ -509,16 +475,27 @@ export default function AdminPanel() {
                 {pendingLeaves.map((req) => (
                   <tr key={req._id}>
                     <td>{req.userId?.name}</td>
-                    <td><span className={`role-badge role-${req.userId?.role}`}>{req.userId?.role}</span></td>
-                    <td>{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</td>
+                    <td>
+                      <span className={`role-badge role-${req.userId?.role}`}>{req.userId?.role}</span>
+                    </td>
+                    <td>
+                      {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                    </td>
                     <td>{req.reason}</td>
                     <td>
                       {req.paidDays || 0}/{req.unpaidDays || 0}
-                      {req.salaryCut ? <span style={{ color: "#c53030", marginLeft: "6px" }}>(Cut)</span> : null}
+                      {req.salaryCut ? <span className="salary-cut-note">(Cut)</span> : null}
                     </td>
                     <td>
-                      <button className="btn btn-pay" onClick={() => handleLeaveAction(req._id, "Approved")}>Approve</button>
-                      <button className="btn btn-delete" style={{marginLeft: '5px'}} onClick={() => handleLeaveAction(req._id, "Rejected")}>Reject</button>
+                      <button className="btn btn-pay" onClick={() => handleLeaveAction(req._id, "Approved")}>
+                        Approve
+                      </button>
+                      <button
+                        className="btn btn-delete reject-btn"
+                        onClick={() => handleLeaveAction(req._id, "Rejected")}
+                      >
+                        Reject
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -531,13 +508,10 @@ export default function AdminPanel() {
       {role?.toLowerCase() === "admin" && (
         <div className="dashboard-section">
           <div className="section-header">
-            <h2 className="section-title">
-              <span className="icon">ðŸ“ˆ</span>
-              Yearly Leave Summary (Paid/Unpaid)
-            </h2>
+            <h2 className="section-title">Yearly Leave Summary (Paid/Unpaid)</h2>
           </div>
-          <div style={{ marginBottom: "12px", display: "flex", gap: "10px", alignItems: "center" }}>
-            <label htmlFor="leave-summary-year"><strong>Year:</strong></label>
+          <div className="leave-summary-controls">
+            <label htmlFor="leave-summary-year">Year:</label>
             <input
               id="leave-summary-year"
               type="number"
@@ -545,7 +519,6 @@ export default function AdminPanel() {
               max="3000"
               value={leaveSummaryYear}
               onChange={(e) => setLeaveSummaryYear(Number(e.target.value) || new Date().getFullYear())}
-              style={{ width: "110px", padding: "6px 8px" }}
             />
           </div>
           <div className="table-wrapper">
@@ -561,16 +534,20 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {leaveSummary.length > 0 ? leaveSummary.map((row) => (
-                  <tr key={row.userId}>
-                    <td>{row.name}</td>
-                    <td><span className={`role-badge role-${row.role}`}>{row.role}</span></td>
-                    <td>{row.approvedPaidDays || 0}</td>
-                    <td>{row.approvedUnpaidDays || 0}</td>
-                    <td>{row.pendingPaidDays || 0}</td>
-                    <td>{row.pendingUnpaidDays || 0}</td>
-                  </tr>
-                )) : (
+                {leaveSummary.length > 0 ? (
+                  leaveSummary.map((row) => (
+                    <tr key={row.userId}>
+                      <td>{row.name}</td>
+                      <td>
+                        <span className={`role-badge role-${row.role}`}>{row.role}</span>
+                      </td>
+                      <td>{row.approvedPaidDays || 0}</td>
+                      <td>{row.approvedUnpaidDays || 0}</td>
+                      <td>{row.pendingPaidDays || 0}</td>
+                      <td>{row.pendingUnpaidDays || 0}</td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan="6">No leave summary data found for this year.</td>
                   </tr>
@@ -581,14 +558,10 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Attendance Log Section (Admin Only) */}
       {role?.toLowerCase() === "admin" && (
         <div className="dashboard-section">
           <div className="section-header">
-            <h2 className="section-title">
-              <span className="icon">📅</span>
-              Organization Attendance Log
-            </h2>
+            <h2 className="section-title">Organization Attendance Log</h2>
           </div>
           <div className="table-wrapper">
             <table className="employee-table">
@@ -618,13 +591,15 @@ export default function AdminPanel() {
                     const salaryCutText = !checkOut
                       ? "Pending checkout"
                       : shortByMinutes > 0
-                        ? "Yes (" + formatMinutes(shortByMinutes) + " short" + (estimatedCut !== null ? ", est. cut " + estimatedCut : "") + ")"
+                        ? `Yes (${formatMinutes(shortByMinutes)} short${estimatedCut !== null ? `, est. cut ${estimatedCut}` : ""})`
                         : "No";
 
                     return (
                       <tr key={log._id}>
                         <td>{userRef?.name || "N/A"}</td>
-                        <td><span className={"role-badge role-" + String(roleText).toLowerCase()}>{roleText}</span></td>
+                        <td>
+                          <span className={`role-badge role-${String(roleText).toLowerCase()}`}>{roleText}</span>
+                        </td>
                         <td>{userRef?.department || "N/A"}</td>
                         <td>{dateText}</td>
                         <td>{formatTime(checkIn)}</td>
@@ -642,19 +617,15 @@ export default function AdminPanel() {
               </tbody>
             </table>
           </div>
-          <p style={{ marginTop: "10px", color: "#475569", fontWeight: 600 }}>
+          <p className="inline-note">
             Minimum required work per day: {minimumRequiredHoursForTable} hour(s)
           </p>
         </div>
       )}
 
-      {/* Employee Table */}
       <div className="dashboard-section">
         <div className="section-header">
-          <h2 className="section-title">
-            <span className="icon">👥</span>
-            Employee Records ({filteredEmployees.length})
-          </h2>
+          <h2 className="section-title">Employee Records ({filteredEmployees.length})</h2>
         </div>
         <EmployeeList
           role={role}

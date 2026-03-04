@@ -46,13 +46,19 @@ function Navbar() {
     return "role-employee";
   }, [roleLower]);
 
+  const isActive = (path) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const navLinkClass = (path, extraClasses = "") =>
+    `nav-link ${isActive(path) ? "is-active" : ""} ${extraClasses}`.trim();
+
   const commonLinks = (
     <>
-      <Link to="/" className="nav-link">Dashboard</Link>
-      <Link to="/attendance" className="nav-link">Mark Attendance</Link>
-      <Link to="/attendance-history" className="nav-link">Attendance History</Link>
+      <Link to="/" className={navLinkClass("/")}>Dashboard</Link>
+      <Link to="/attendance" className={navLinkClass("/attendance")}>Mark Attendance</Link>
+      <Link to="/attendance-history" className={navLinkClass("/attendance-history")}>Attendance History</Link>
       {roleLower !== "admin" && (
-        <Link to="/leave-request" className="nav-link">Apply Leave</Link>
+        <Link to="/leave-request" className={navLinkClass("/leave-request")}>Apply Leave</Link>
       )}
     </>
   );
@@ -61,9 +67,9 @@ function Navbar() {
     if (roleLower === "admin") {
       return (
         <>
-          <Link to="/admin" className="nav-link nav-link-emphasis nav-admin">Admin Panel</Link>
-          <Link to="/hr" className="nav-link nav-link-emphasis nav-hr">HR Dashboard</Link>
-          <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
+          <Link to="/admin" className={navLinkClass("/admin", "nav-link-emphasis nav-admin")}>Admin Panel</Link>
+          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR Dashboard</Link>
+          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
         </>
       );
     }
@@ -71,15 +77,15 @@ function Navbar() {
     if (roleLower === "hr") {
       return (
         <>
-          <Link to="/hr" className="nav-link nav-link-emphasis nav-hr">HR Dashboard</Link>
-          <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
+          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR Dashboard</Link>
+          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
         </>
       );
     }
 
     if (roleLower === "manager") {
       return (
-        <Link to="/manager" className="nav-link nav-link-emphasis nav-manager">Team Dashboard</Link>
+        <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
       );
     }
 
@@ -97,7 +103,7 @@ function Navbar() {
             className="brand-logo"
           />
           <div className="brand-copy">
-            <span className="brand-title">Employee Management</span>
+            <span className="brand-title">EmployeeHub</span>
             <span className="brand-subtitle">People. Payroll. Performance.</span>
           </div>
         </Link>
@@ -139,14 +145,14 @@ function Navbar() {
               <button
                 type="button"
                 className="user-button"
-                onClick={() => setShowUserMenu(!showUserMenu)}
+                onClick={() => setShowUserMenu((prev) => !prev)}
               >
                 <span className="user-avatar">{user.name?.charAt(0) || "U"}</span>
                 <span className="user-details">
                   <span className="user-name">{user.name}</span>
                   <span className={`user-role-badge ${roleClass}`}>{user.role}</span>
                 </span>
-                <span className="dropdown-icon">▾</span>
+                <span className="dropdown-icon" aria-hidden="true">v</span>
               </button>
 
               {showUserMenu && (

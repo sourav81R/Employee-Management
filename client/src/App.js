@@ -1,33 +1,20 @@
-// src/App.js
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-} from "react-router-dom";
-import Dashboard from "./pages/Dashboard"; // ensure file is src/pages/Dashboard.js
-import AdminPanel from "./pages/Adminpanel"; // ensure file is src/pages/AdminPanel.js (case-sensitive)
-import HRDashboard from "./pages/HRDashboard"; // HR dashboard
-import ManagerDashboard from "./pages/ManagerDashboard"; // Manager dashboard
-import Login from "./pages/Login"; // ensure file is src/pages/Login.js
-import Register from "./pages/Register"; // ensure file is src/pages/Register.js
-import AttendanceCapture from "./components/AttendanceCapture"; // New Attendance Capture component
-import AttendanceHistory from "./components/AttendanceHistory"; // New Attendance History component
-import LeaveRequestPage from "./pages/LeaveRequestPage"; // Leave Request page
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import AdminPanel from "./pages/Adminpanel";
+import HRDashboard from "./pages/HRDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import AttendanceCapture from "./components/AttendanceCapture";
+import AttendanceHistory from "./components/AttendanceHistory";
+import LeaveRequestPage from "./pages/LeaveRequestPage";
 import CompanyInfoPage from "./pages/CompanyInfoPage";
-import Navbar from "./components/navbar"; // Import the Navbar from its dedicated file
+import Navbar from "./components/navbar";
 import Footer from "./components/Footer";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import "./App.css";
-import { ProtectedRoute } from "./components/ProtectedRoute"; // Import the generic ProtectedRoute
 
-// ================================
-// Navbar Component - This definition is redundant as Navbar is imported from its own file.
-// Removing this local definition to avoid confusion and ensure the correct Navbar is used.
-
-// ================================
-// Main App Component
-// ================================
 export default function App() {
   return (
     <Router>
@@ -35,84 +22,81 @@ export default function App() {
         <Navbar />
         <main className="app-main">
           <Routes>
-          {/* Dashboard (All logged-in users) */}
-          <Route
-            path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-          />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <AttendanceCapture />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance-history"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <AttendanceHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr"
+              element={
+                <ProtectedRoute requiredRoles={["hr", "admin"]}>
+                  <HRDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leave-request"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <LeaveRequestPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Mark Attendance (All logged-in users) */}
-          <Route
-            path="/attendance"
-            element={<ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}><AttendanceCapture /></ProtectedRoute>}
-          />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/about-us" element={<CompanyInfoPage />} />
+            <Route path="/careers" element={<CompanyInfoPage />} />
+            <Route path="/privacy-policy" element={<CompanyInfoPage />} />
+            <Route path="/terms-of-service" element={<CompanyInfoPage />} />
 
-          {/* Attendance History (All logged-in users, with role-based data fetching) */}
-          <Route
-            path="/attendance-history"
-            element={<ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}><AttendanceHistory /></ProtectedRoute>}
-          />
+            <Route
+              path="/manager"
+              element={
+                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
+                  <ManagerDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Admin Panel */}
-          <Route
-            path="/admin"
-            element={<ProtectedRoute requiredRoles={["admin"]}><AdminPanel /></ProtectedRoute>}
-          />
-
-          {/* HR Dashboard */}
-          <Route
-            path="/hr" element={<ProtectedRoute requiredRoles={["hr", "admin"]}><HRDashboard /></ProtectedRoute>}
-          />
-
-          {/* Leave Request (All logged-in users) */}
-          <Route
-            path="/leave-request"
-            // Using ProtectedRoute for consistency
-            element={<ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}><LeaveRequestPage /></ProtectedRoute>}
-          />
-
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/about-us" element={<CompanyInfoPage />} />
-          <Route path="/careers" element={<CompanyInfoPage />} />
-          <Route path="/privacy-policy" element={<CompanyInfoPage />} />
-          <Route path="/terms-of-service" element={<CompanyInfoPage />} />
-
-          {/* Manager Dashboard */}
-          <Route
-            path="/manager"
-            element={
-              // Managers, HR and Admins can access the Manager Dashboard
-              <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}><ManagerDashboard /></ProtectedRoute>
-            }
-          />
-
-          {/* 404 Fallback */}
-          <Route
-            path="*"
-            element={
-              <div
-                style={{
-                  textAlign: "center",
-                  marginTop: 100,
-                  color: "#555",
-                }}
-              >
-                <h2>404 - Page Not Found</h2>
-                <p>The page you’re looking for doesn’t exist.</p>
-                <Link
-                  to="/"
-                  style={{
-                    color: "#2563eb",
-                    textDecoration: "underline",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Go Back to Dashboard
-                </Link>
-              </div>
-            }
-          />
+            <Route
+              path="*"
+              element={
+                <div className="not-found">
+                  <h2>404 - Page Not Found</h2>
+                  <p>The page you are looking for does not exist.</p>
+                  <Link to="/">Go Back to Dashboard</Link>
+                </div>
+              }
+            />
           </Routes>
         </main>
         <Footer />
