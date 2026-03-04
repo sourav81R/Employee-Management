@@ -81,6 +81,7 @@
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(186, 247, 232, 0.32);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
 .register-info .decorative-image {
@@ -88,6 +89,18 @@
   height: 220px;
   object-fit: cover;
   display: block;
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.register-info .decorative-image-container:hover {
+  transform: translateY(-3px);
+  border-color: rgba(186, 247, 232, 0.6);
+  box-shadow: 0 16px 30px rgba(4, 33, 30, 0.35);
+}
+
+.register-info .decorative-image-container:hover .decorative-image {
+  transform: scale(1.045);
+  filter: brightness(1.06) saturate(1.06);
 }
 
 .register-card {
