@@ -29,6 +29,12 @@ export const markAllAsRead = asyncHandler(async (req, res) => {
   return res.json({ message: "All notifications marked as read" });
 });
 
+export const deleteNotification = asyncHandler(async (req, res) => {
+  const deleted = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+  if (!deleted) return res.status(404).json({ message: "Notification not found" });
+  return res.json({ message: "Notification deleted" });
+});
+
 export const sendNotification = asyncHandler(async (req, res) => {
   const { userId, title, message, type = "info" } = req.body;
   if (!userId || !title || !message) return res.status(400).json({ message: "userId, title and message are required" });

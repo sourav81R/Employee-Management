@@ -65,6 +65,13 @@
   background: #0f766e;
   color: #fff;
   cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  line-height: 1.15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .enterprise-btn.secondary {
@@ -115,6 +122,25 @@
 .enterprise-success {
   color: #166534;
   font-size: 0.92rem;
+}
+
+.documents-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.documents-actions .enterprise-btn {
+  width: auto;
+  min-width: 72px;
+  margin: 0;
+}
+
+.documents-table td select {
+  min-width: 130px;
+  max-width: 180px;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -188,21 +214,9 @@
     letter-spacing: 0.04em;
   }
 
-.documents-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.documents-table td select {
-  min-width: 130px;
-  max-width: 180px;
-  width: 100%;
-}
-
-.documents-actions .enterprise-btn {
-  width: auto;
-  flex: 1;
-  min-width: 90px;
-}
+  .documents-actions .enterprise-btn {
+    width: auto;
+    flex: 1;
+    min-width: 90px;
+  }
 }

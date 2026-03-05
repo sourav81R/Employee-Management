@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
-import { apiGet, apiPatch } from "../utils/http";
+import { apiDelete, apiGet, apiPatch } from "../utils/http";
 import { resolveApiBaseUrl } from "../utils/apiBase";
 import "../styles/enterprise.css";
 
@@ -58,6 +58,18 @@ export default function NotificationsPage() {
     }
   }
 
+  async function deleteItem(id) {
+    const shouldDelete = window.confirm("Delete this notification?");
+    if (!shouldDelete) return;
+
+    try {
+      await apiDelete(`/api/notifications/${id}`);
+      setItems((prev) => prev.filter((item) => item._id !== id));
+    } catch (err) {
+      setError(err.message || "Failed to delete notification");
+    }
+  }
+
   return (
     <div className="enterprise-page">
       <div className="enterprise-header">
@@ -85,9 +97,12 @@ export default function NotificationsPage() {
                   <td>{new Date(item.createdAt).toLocaleString()}</td>
                   <td>{item.read ? "Read" : "Unread"}</td>
                   <td>
-                    {!item.read ? (
-                      <button type="button" className="enterprise-btn secondary" onClick={() => markRead(item._id)}>Mark Read</button>
-                    ) : "-"}
+                    <div className="documents-actions">
+                      {!item.read ? (
+                        <button type="button" className="enterprise-btn secondary" onClick={() => markRead(item._id)}>Mark Read</button>
+                      ) : null}
+                      <button type="button" className="enterprise-btn warn" onClick={() => deleteItem(item._id)}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}

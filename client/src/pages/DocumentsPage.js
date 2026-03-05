@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { apiDelete, apiGet, apiPatch, apiPut, apiUpload } from "../utils/http";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, apiUpload } from "../utils/http";
 import { buildFileUrl } from "../utils/apiBase";
 import "../styles/enterprise.css";
 
@@ -99,7 +99,18 @@ export default function DocumentsPage() {
     setSavingId(id);
     setError("");
     try {
-      await apiDelete(`/api/documents/${id}`);
+      try {
+        await apiDelete(`/api/documents/${id}`);
+      } catch (deleteErr) {
+        const msg = String(deleteErr?.message || "");
+        const shouldFallback =
+          msg.includes("Route not found: DELETE")
+          || msg.includes("Request failed: 404");
+
+        if (!shouldFallback) throw deleteErr;
+        await apiPost(`/api/documents/${id}/delete`, {});
+      }
+
       if (editingId === id) cancelEditing();
       await loadDocuments();
     } catch (err) {

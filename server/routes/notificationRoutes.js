@@ -4,6 +4,7 @@ import {
   unreadCount,
   markNotificationAsRead,
   markAllAsRead,
+  deleteNotification,
   sendNotification,
   broadcastNotification,
 } from "../controllers/notificationController.js";
@@ -16,6 +17,7 @@ router.get("/", verifyToken, myNotifications);
 router.get("/unread-count", verifyToken, unreadCount);
 router.patch("/read-all", verifyToken, markAllAsRead);
 router.patch("/:id/read", verifyToken, markNotificationAsRead);
+router.delete("/:id", verifyToken, deleteNotification);
 router.post("/send", verifyToken, requireRole("admin", "hr", "manager"), sendNotification);
 router.post("/broadcast", verifyToken, requireRole("admin", "hr"), broadcastNotification);
 
