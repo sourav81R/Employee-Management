@@ -1,14 +1,18 @@
 import React, { useMemo, useState, useContext, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { apiGet } from "../utils/http";
 import "../styles/navbar.css";
 
 function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const roleLower = (user?.role || "").trim().toLowerCase();
 
   const handleLogout = () => {
     logout();
@@ -37,7 +41,31 @@ function Navbar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const roleLower = (user?.role || "").trim().toLowerCase();
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return undefined;
+    }
+
+    let active = true;
+
+    const loadCount = async () => {
+      try {
+        const data = await apiGet("/api/notifications/unread-count");
+        if (active) setUnreadCount(Number(data?.unread || 0));
+      } catch (_err) {
+        if (active) setUnreadCount(0);
+      }
+    };
+
+    loadCount();
+    const timer = setInterval(loadCount, 30000);
+
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [user]);
 
   const roleClass = useMemo(() => {
     if (roleLower === "admin") return "role-admin";
@@ -55,11 +83,16 @@ function Navbar() {
   const commonLinks = (
     <>
       <Link to="/" className={navLinkClass("/")}>Dashboard</Link>
-      <Link to="/attendance" className={navLinkClass("/attendance")}>Mark Attendance</Link>
-      <Link to="/attendance-history" className={navLinkClass("/attendance-history")}>Attendance History</Link>
+      <Link to="/attendance" className={navLinkClass("/attendance")}>Attendance</Link>
+      <Link to="/attendance-history" className={navLinkClass("/attendance-history")}>History</Link>
       {roleLower !== "admin" && (
-        <Link to="/leave-request" className={navLinkClass("/leave-request")}>Apply Leave</Link>
+        <Link to="/leave-request" className={navLinkClass("/leave-request")}>Leave</Link>
       )}
+      <Link to="/payroll" className={navLinkClass("/payroll")}>Payroll</Link>
+      <Link to="/tasks" className={navLinkClass("/tasks")}>Tasks</Link>
+      <Link to="/performance" className={navLinkClass("/performance")}>Performance</Link>
+      <Link to="/announcements" className={navLinkClass("/announcements")}>Announcements</Link>
+      <Link to="/documents" className={navLinkClass("/documents")}>Documents</Link>
     </>
   );
 
@@ -67,9 +100,12 @@ function Navbar() {
     if (roleLower === "admin") {
       return (
         <>
-          <Link to="/admin" className={navLinkClass("/admin", "nav-link-emphasis nav-admin")}>Admin Panel</Link>
-          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR Dashboard</Link>
-          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
+          <Link to="/admin" className={navLinkClass("/admin", "nav-link-emphasis nav-admin")}>Admin</Link>
+          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR</Link>
+          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team</Link>
+          <Link to="/departments" className={navLinkClass("/departments")}>Departments</Link>
+          <Link to="/recruitment" className={navLinkClass("/recruitment")}>Recruitment</Link>
+          <Link to="/analytics" className={navLinkClass("/analytics")}>Analytics</Link>
         </>
       );
     }
@@ -77,15 +113,23 @@ function Navbar() {
     if (roleLower === "hr") {
       return (
         <>
-          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR Dashboard</Link>
-          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
+          <Link to="/hr" className={navLinkClass("/hr", "nav-link-emphasis nav-hr")}>HR</Link>
+          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team</Link>
+          <Link to="/departments" className={navLinkClass("/departments")}>Departments</Link>
+          <Link to="/recruitment" className={navLinkClass("/recruitment")}>Recruitment</Link>
+          <Link to="/analytics" className={navLinkClass("/analytics")}>Analytics</Link>
         </>
       );
     }
 
     if (roleLower === "manager") {
       return (
-        <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team Dashboard</Link>
+        <>
+          <Link to="/manager" className={navLinkClass("/manager", "nav-link-emphasis nav-manager")}>Team</Link>
+          <Link to="/departments" className={navLinkClass("/departments")}>Departments</Link>
+          <Link to="/recruitment" className={navLinkClass("/recruitment")}>Recruitment</Link>
+          <Link to="/analytics" className={navLinkClass("/analytics")}>Analytics</Link>
+        </>
       );
     }
 
@@ -142,6 +186,11 @@ function Navbar() {
 
           {user && (
             <div className="user-menu">
+              <Link to="/notifications" className="notification-link" onClick={() => setShowUserMenu(false)}>
+                <span>Notifications</span>
+                {unreadCount > 0 ? <span className="notification-count">{unreadCount}</span> : null}
+              </Link>
+
               <button
                 type="button"
                 className="user-button"

@@ -1,5 +1,6 @@
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const PROD_API_FALLBACK = "https://employee-management-etc0.onrender.com";
+const LOCAL_API_FALLBACK = "http://localhost:8000";
 
 function normalizeBaseUrl(url) {
   const trimmed = (url || "").trim().replace(/\/$/, "");
@@ -38,6 +39,21 @@ export function resolveApiBaseUrl() {
 export function buildApiUrl(path) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${resolveApiBaseUrl()}${normalizedPath}`;
+}
+
+export function buildFileUrl(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const apiBase = resolveApiBaseUrl();
+
+  if (apiBase) {
+    return `${apiBase}${normalizedPath}`;
+  }
+
+  if (isLocalRuntime()) {
+    return `${LOCAL_API_FALLBACK}${normalizedPath}`;
+  }
+
+  return `${PROD_API_FALLBACK}${normalizedPath}`;
 }
 
 export function isApiConfigMissingInProduction() {

@@ -433,3 +433,37 @@
     min-height: 42px;
   }
 }
+
+.notification-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f172a;
+  text-decoration: none;
+  font-size: 0.86rem;
+  margin-right: 10px;
+}
+
+.notification-count {
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 0 5px;
+}
+
+@media (max-width: 900px) {
+  .notification-link {
+    width: 100%;
+    justify-content: center;
+    margin: 4px 0 8px;
+  }
+}

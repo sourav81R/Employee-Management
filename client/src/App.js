@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+
 import Dashboard from "./pages/Dashboard";
 import AdminPanel from "./pages/Adminpanel";
 import HRDashboard from "./pages/HRDashboard";
@@ -12,6 +13,17 @@ import LeaveRequestPage from "./pages/LeaveRequestPage";
 import CompanyInfoPage from "./pages/CompanyInfoPage";
 import Navbar from "./components/navbar";
 import Footer from "./components/Footer";
+
+import PayrollPage from "./pages/PayrollPage";
+import TasksPage from "./pages/TasksPage";
+import PerformancePage from "./pages/PerformancePage";
+import DepartmentsPage from "./pages/DepartmentsPage";
+import DocumentsPage from "./pages/DocumentsPage";
+import RecruitmentPage from "./pages/RecruitmentPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
+import NotificationsPage from "./pages/NotificationsPage";
+
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -30,6 +42,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/attendance"
               element={
@@ -47,6 +60,88 @@ export default function App() {
               }
             />
             <Route
+              path="/leave-request"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <LeaveRequestPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/payroll"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <PayrollPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <TasksPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/performance"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <PerformancePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/departments"
+              element={
+                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
+                  <DepartmentsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/documents"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <DocumentsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recruitment"
+              element={
+                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
+                  <RecruitmentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <AnnouncementsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/admin"
               element={
                 <ProtectedRoute requiredRoles={["admin"]}>
@@ -63,10 +158,10 @@ export default function App() {
               }
             />
             <Route
-              path="/leave-request"
+              path="/manager"
               element={
-                <ProtectedRoute requiredRoles={["employee", "manager", "hr", "admin"]}>
-                  <LeaveRequestPage />
+                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
+                  <ManagerDashboard />
                 </ProtectedRoute>
               }
             />
@@ -77,15 +172,6 @@ export default function App() {
             <Route path="/careers" element={<CompanyInfoPage />} />
             <Route path="/privacy-policy" element={<CompanyInfoPage />} />
             <Route path="/terms-of-service" element={<CompanyInfoPage />} />
-
-            <Route
-              path="/manager"
-              element={
-                <ProtectedRoute requiredRoles={["manager", "hr", "admin"]}>
-                  <ManagerDashboard />
-                </ProtectedRoute>
-              }
-            />
 
             <Route
               path="*"
